@@ -3,6 +3,12 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <signal.h>
 
 
 int main(int argc, char* argv[]) {
@@ -40,7 +46,7 @@ int connect(){
 
     // Set up the address structure
     my_addr.sin_family = AF_INET;         // host byte order
-    my_addr.sin_port = htons(PORT);       // short, network byte order
+    my_addr.sin_port = htons(4244);       // short, network byte order
     my_addr.sin_addr.s_addr = INADDR_ANY; // automatically fill with my IP
     memset(&(my_addr.sin_zero), '\0', 8); // zero the rest of the struct
 
@@ -51,7 +57,7 @@ int connect(){
     }
 
     // Listen for connections
-    if (listen(sockfd, BACKLOG) == -1) {
+    if (listen(sockfd, 8) == -1) {
         perror("listen");
         exit(1);
     }
@@ -70,29 +76,28 @@ int connect(){
 
 
 int main() {
- int sock=socket(PF_INET,SOCK_STREAM,0);
- struct sockaddr_in sockaddress;
- sockaddress.sin_family=AF_INET;
- sockaddress.sin_port=htons(4244);
- sockaddress.sin_addr.s_addr=htonl(INADDR_ANY);
- int r=bind(sock,(struct sockaddr *)&sockaddress,sizeof(struct
- sockaddr_in));
- if(r==0){
- r=listen(sock,0);
- if(r==0){
- struct sockaddr_in caller;
- socklen_t size=sizeof(caller);
- while(1){
-int *sock2=(int *)malloc(sizeof(int));
- *sock2=accept(sock,(struct sockaddr *)&caller,&si);
- if(sock2>=0){
- pthread_t th;
- pthread_create(&th,NULL,comm,sock2);
- }
- }
- }
- }
- return 0;
+    int sock=socket(PF_INET,SOCK_STREAM,0);
+    struct sockaddr_in sockaddress;
+    sockaddress.sin_family=AF_INET;
+    sockaddress.sin_port=htons(4244);
+    sockaddress.sin_addr.s_addr=htonl(INADDR_ANY);
+    int r=bind(sock,(struct sockaddr *)&sockaddress,sizeof(struct sockaddr_in));
+    if(r==0){
+        r=listen(sock,0);
+        if(r==0){
+            struct sockaddr_in caller;
+            socklen_t size=sizeof(caller);
+            while(1){
+                int *sock2=(int *)malloc(sizeof(int));
+                *sock2=accept(sock,(struct sockaddr *)&caller,&size);
+                if(sock2>=0){
+                    pthread_t th;
+                    pthread_create(&th,NULL,comm,sock2);
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 
