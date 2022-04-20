@@ -76,7 +76,7 @@ int connect(){
 
 
 int main() {
-    int sock=socket(PF_INET,SOCK_STREAM,0);
+    /*int sock=socket(PF_INET,SOCK_DGRAM,0);
     struct sockaddr_in sockaddress;
     sockaddress.sin_family=AF_INET;
     sockaddress.sin_port=htons(4244);
@@ -97,7 +97,31 @@ int main() {
             }
         }
     }
+    return 0;*/
+
+    int sock=socket(PF_INET,SOCK_DGRAM,0);
+    struct addrinfo *first_info;
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype=SOCK_DGRAM;
+    int r=getaddrinfo("localhost","5555",&hints,&first_info);
+    if(r==0){
+        if(first_info!=NULL){
+            struct sockaddr *saddr=first_info->ai_addr;
+            char tampon[100];
+            int i=0;
+            for(i=0;i<=10;i++){
+                strcpy(tampon,"MESSAGE ");
+                char entier[3];
+                sprintf(entier,"%d",i);
+                strcat(tampon,entier);
+                sendto(sock,tampon,strlen(tampon),0,saddr,(socklen_t)sizeof(struct sockaddr_in));
+            }
+        }
+    }
     return 0;
 }
+
 
 
