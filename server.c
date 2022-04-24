@@ -12,7 +12,7 @@
 
 struct user_info
 {
-    int sock_tcp;
+    int sock;
     uint32_t sin_addr;
     struct sockaddr* saddr;
 };
@@ -29,6 +29,8 @@ struct lobby
 
 void* joueur(void* info);
 void* comm_udp(void* info);
+int is_id_in_lobby(char* id, int m);
+int is_lobby_ready(int m);
 
 uint8_t n = 0;
 struct lobby parties[255];
@@ -83,7 +85,7 @@ int main(int argc, char* argv[])
     {
         sock2 = accept(sock, (struct sockaddr*) &caller, (socklen_t*) &size);
         printf("Connexion TCP acceptée.\n");
-        info.sock_tcp = sock2;
+        info.sock = sock2;
         info.sin_addr = caller.sin_addr.s_addr;
         pthread_create(&th, NULL, joueur, (void*) &info);
     }
@@ -99,7 +101,7 @@ void* joueur(void* info)
 {
     // Déclaration des variables
     struct user_info* current_user = (struct user_info*) info;
-    int sock_tcp = current_user -> sock_tcp;
+    int sock = current_user -> sock;
     int read_size, tampon = 0;
     char message[5], buffer[3];
 
@@ -111,7 +113,7 @@ void* joueur(void* info)
     tampon += sizeof(uint8_t);
     memcpy(games + tampon, "***", strlen("***"));
     tampon += strlen("***");
-    if(write(sock_tcp, games, tampon) == -1)
+    if(write(sock, games, tampon) == -1)
     {
         perror("Erreur lors de l'envoi du message \"GAMES\".\n");
         return NULL;
@@ -127,7 +129,7 @@ void* joueur(void* info)
         {
             memcpy(ogame + 6, &i, sizeof(uint8_t)); // m
             memcpy(ogame + 6 + sizeof(uint8_t) + 1, &parties[i].s, sizeof(uint8_t)); // s
-            write(sock_tcp, ogame, 11);
+            write(sock, ogame, 11);
         }
     }
     printf("Message(s) [OGAME_m_s***] envoyé(s) au joueur.\n");
@@ -142,17 +144,17 @@ void* joueur(void* info)
     while(1)
     {
         printf("En attente d'une requête [NEWPL_id_port***] ou [REGIS_id_port_m***].\n");
-        read(sock_tcp, message, 5);
+        read(sock, message, 5);
         printf("Requête reçue : \"%s\"\n", message);
 
         // Parsing de la requête [NEWPL␣id␣port***] / [REGIS␣id␣port␣m***]
         if(strcmp(message, "NEWPL") == 0)
         {
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, id, 8); // id
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, port, 4); // port
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 1); // _
+            read(sock, id, 8); // id
+            read(sock, buffer, 1); // _
+            read(sock, port, 4); // port
+            read(sock, buffer, 3); // ***
 
             uint8_t i;
             for(i = 0; parties[i].etat != 0; i++){}
@@ -161,13 +163,13 @@ void* joueur(void* info)
         }
         else if(strcmp(message, "REGIS") == 0)
         {
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, id, 8); // id
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, port, 4); // port
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, &m, sizeof(uint8_t)); // m
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 1); // _
+            read(sock, id, 8); // id
+            read(sock, buffer, 1); // _
+            read(sock, port, 4); // port
+            read(sock, buffer, 1); // _
+            read(sock, &m, sizeof(uint8_t)); // m
+            read(sock, buffer, 3); // ***
         }
         else
         {
@@ -196,7 +198,7 @@ void* joueur(void* info)
         else
         {
             printf("Erreur lors du binding du serveur, envoi du message [REGNO***].\n");
-            if(write(sock_tcp, "REGNO***", strlen("REGNO***")) == -1)
+            if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
             {
                 perror("Erreur lors de l'envoi du message \"REGNO\".\n");
                 return NULL;
@@ -214,7 +216,7 @@ void* joueur(void* info)
     char regok[10] = "REGOK ";
     memcpy(regok + 6, &m, sizeof(uint8_t)); // m
     memcpy(regok + 6 + sizeof(uint8_t), "***", strlen("***"));
-    if(write(sock_tcp, regok, 10) == -1)
+    if(write(sock, regok, 10) == -1)
     {
         perror("Erreur lors de l'envoi du message \"REGOK\".\n");
         return NULL;
@@ -226,33 +228,34 @@ void* joueur(void* info)
     {
         printf("En attente d'une requête [START***], [UNREG***], [SIZE?_m***], [LIST?_m***] ou [GAME?***].\n");
 
-        read_size = read(sock_tcp, message, 5); // [START***], [UNREG***], [SIZE?_m***], [LIST?_m***], [GAME?***]
+        read_size = read(sock, message, 5); // [START***], [UNREG***], [SIZE?_m***], [LIST?_m***], [GAME?***]
         message[read_size] = '\0';
         printf("Requête reçue : \"%s\"\n", message);
 
         if(strcmp(message, "START") == 0) // [START***]
         {
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 3); // ***
+            parties[m].start[i] = 1;
         }
         else if(strcmp(message, "UNREG") == 0) // [UNREG***]
         {
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 3); // ***
         }
         else if(strcmp(message, "SIZE?") == 0) // [SIZE?_m***]
         {
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, &m, sizeof(uint8_t)); // m
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 1); // _
+            read(sock, &m, sizeof(uint8_t)); // m
+            read(sock, buffer, 3); // ***
         }
         else if(strcmp(message, "LIST?") == 0) // [LIST?_m***]
         {
-            read(sock_tcp, buffer, 1); // _
-            read(sock_tcp, &m, sizeof(uint8_t)); // m
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 1); // _
+            read(sock, &m, sizeof(uint8_t)); // m
+            read(sock, buffer, 3); // ***
         }
         else if(strcmp(message, "GAME?") == 0) // [GAME?***]
         {
-            read(sock_tcp, buffer, 3); // ***
+            read(sock, buffer, 3); // ***
         }
         else
         {
@@ -297,6 +300,31 @@ void* joueur(void* info)
         printf("Réponse envoyée en TCP : '%s'\n", reponse);
     } */
     return 0;
+}
+
+int is_id_in_lobby(char* id, int m)
+{
+    for(int i = 0; i < 100; i++)
+    {
+        if(strcmp(id, parties[m].ids[i]) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int is_lobby_ready(int m)
+{
+    int a = 0;
+    for(int i = 0; i < 100; i++)
+    {
+        if(parties[m].start == 1)
+        {
+            a += 1;
+        }
+    }
+    return a == parties[m].s;
 }
 
 /* void* comm_udp(void* info)
