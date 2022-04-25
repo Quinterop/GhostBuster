@@ -144,53 +144,71 @@ void* joueur(void* info)
             id[9] = '\0', port[5] = '\0';
             printf("ID : \"%s\"\nPort : \"%s\"\nm : \"%d\"\n", id, port, m);
 
-            // Création du socket UDP
-            int sock_udp;
-            struct sockaddr_in sockaddress;
-            struct addrinfo *first_info, hints;
-
-            memset(&hints, 0, sizeof(struct addrinfo));
-            sock_udp = socket(PF_INET, SOCK_DGRAM, 0);
-            if(sock_udp == -1)
+            if((*info_joueur).inscrit == 1)
             {
-                printf("Erreur lors de la création du socket.\n");
-                return NULL;
-            }
-            sockaddress.sin_family = AF_INET;
-            sockaddress.sin_port = htons(atoi(port));
-            sockaddress.sin_addr.s_addr = htonl(INADDR_ANY);
-            getaddrinfo("localhost", port, &hints, &first_info);
-            if(bind(sock_udp, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) == 0)
-            {
-                printf("Socket UDP créée.\n");
-            }
-            else
-            {
-                printf("Erreur lors du binding du serveur, envoi du message [REGNO***].\n");
+                printf("Le joueur est déjà inscrit dans une partie.\n");
                 if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
                 {
-                    perror("Erreur lors de l'envoi du message \"REGNO\".\n");
+                    perror("Erreur lors de l'envoi du message [REGNO***].\n");
                     return NULL;
                 }
             }
-            for(i = 0; parties[m].disponibilite[i] != 0; i++){}
-            parties[m].disponibilite[i] = 1;
-            parties[m].etat = 1;
-            parties[m].s += 1;
-            strcpy(parties[m].ids[i], id);
-            strcpy(parties[m].port[i], port);
-            (*info_joueur).inscrit = 1;
-
-            char regok[10] = "REGOK ";
-            memcpy(regok + 6, &m, sizeof(uint8_t)); // m
-            memcpy(regok + 6 + sizeof(uint8_t), "***", strlen("***"));
-            if(write(sock, regok, 10) == -1)
+            else
             {
-                perror("Erreur lors de l'envoi du message \"REGOK\".\n");
-                return NULL;
-            }
+                // Création du socket UDP
+                int sock_udp;
+                struct sockaddr_in sockaddress;
+                struct addrinfo *first_info, hints;
 
-            printf("Le joueur %s est inscrit dans la partie numéro %d.\n", id, m);
+                memset(&hints, 0, sizeof(struct addrinfo));
+                sock_udp = socket(PF_INET, SOCK_DGRAM, 0);
+                if(sock_udp == -1)
+                {
+                    printf("Erreur lors de la création du socket.\n");
+                    if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+                    {
+                        perror("Erreur lors de l'envoi du message [REGNO***].\n");
+                        return NULL;
+                    }
+                }
+                else
+                {
+                    sockaddress.sin_family = AF_INET;
+                    sockaddress.sin_port = htons(atoi(port));
+                    sockaddress.sin_addr.s_addr = htonl(INADDR_ANY);
+                    getaddrinfo("localhost", port, &hints, &first_info);
+                    if(bind(sock_udp, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) == 0)
+                    {
+                        printf("Socket UDP créée.\n");
+                    }
+                    else
+                    {
+                        printf("Erreur lors du binding du serveur, envoi du message [REGNO***].\n");
+                        if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+                        {
+                            perror("Erreur lors de l'envoi du message [REGNO***].\n");
+                            return NULL;
+                        }
+                    }
+                    for(i = 0; parties[m].disponibilite[i] != 0; i++){}
+                    parties[m].disponibilite[i] = 1;
+                    parties[m].etat = 1;
+                    parties[m].s += 1;
+                    strcpy(parties[m].ids[i], id);
+                    strcpy(parties[m].port[i], port);
+                    (*info_joueur).inscrit = 1;
+
+                    char regok[10] = "REGOK ";
+                    memcpy(regok + 6, &m, sizeof(uint8_t)); // m
+                    memcpy(regok + 6 + sizeof(uint8_t), "***", strlen("***"));
+                    if(write(sock, regok, 10) == -1)
+                    {
+                        perror("Erreur lors de l'envoi du message \"REGOK\".\n");
+                        return NULL;
+                    }
+                    printf("Le joueur %s est inscrit dans la partie numéro %d.\n", id, m);
+                }
+            }
         }
         else if(strcmp(message, "START") == 0) // [START***]
         {
@@ -305,7 +323,6 @@ void* joueur(void* info)
         else
         {
             perror("Requête reçue inattendue (attendu : [NEWPL_id_port***]/[REGIS_id_port_m***]/[START***]/[UNREG***]/[SIZE?_m***]/[LIST?_m***]/[GAME?***]).\n");
-            return NULL;
         }
     }
             
@@ -349,17 +366,6 @@ void ogame(int sock)
     printf("Message(s) [OGAME_m_s***] envoyé(s) au joueur.\n");
 }
 
-int is_id_in_lobby(char* id, int m)
-{
-    for(int i = 0; i < 255; i++)
-    {
-        if(strcmp(id, parties[m].ids[i]) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 int is_lobby_ready(int m)
 {
