@@ -12,8 +12,8 @@
 
 struct player
 {
-    int sock;
-    char id[8];
+    int sock; // sock du joueur
+    char id[8]; // id du joueur
     uint8_t inscrit; // 1 -> inscrit à une partie, 0 -> sinon
 };
 
@@ -21,12 +21,12 @@ struct lobby
 {
     uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
     char port[255][4]; // numéro de port du lobby
-    char ids[255][9]; // ids des joueurs inscrits dans la partie
+    char ids[255][8]; // ids des joueurs inscrits dans la partie
     uint8_t disponibilite[255]; // cases disponible du tableau 2D ids (0 / 1)
     uint8_t start[255]; // joueurs étant prêt à lancer la partie (0 / 1)
     uint8_t s; // nombre de joueurs inscrits
-    uint16_t largeur;
-    uint16_t hauteur;
+    uint16_t largeur; // largeur du plateau
+    uint16_t hauteur; // hauteur du plateau
 };
 
 void* joueur(void* info);
@@ -124,7 +124,7 @@ void* joueur(void* info)
 
         if(strcmp(message, "NEWPL") == 0 || strcmp(message, "REGIS") == 0) // [NEWPL_id_port***] / [REGIS_id_port_m***]
         {
-            char id[9], port[5];
+            char id[8], port[4];
             
             read(sock, buffer, 1); // _
             read(sock, id, 8); // id
@@ -141,8 +141,8 @@ void* joueur(void* info)
                 m = i;
             }
             read(sock, buffer, 3); // ***
-            id[9] = '\0', port[5] = '\0';
-            printf("ID : \"%s\"\nPort : \"%s\"\nm : \"%d\"\n", id, port, m);
+            id[8] = '\0', port[4] = '\0';
+            printf("id : %s\nport : %s\nm : %d\n", id, port, m);
 
             if((*info_joueur).inscrit == 1)
             {
@@ -192,8 +192,13 @@ void* joueur(void* info)
                     }
                     for(i = 0; parties[m].disponibilite[i] != 0; i++){}
                     parties[m].disponibilite[i] = 1;
+                    if(parties[m].etat == 0)
+                    {
+                        n++;
+                    }
                     parties[m].etat = 1;
                     parties[m].s += 1;
+                    strcpy((*info_joueur).id, id);
                     strcpy(parties[m].ids[i], id);
                     strcpy(parties[m].port[i], port);
                     (*info_joueur).inscrit = 1;
@@ -230,6 +235,7 @@ void* joueur(void* info)
                 if(parties[m].s == 0)
                 {
                     parties[m].etat = 0;
+                    n--;
                 }
 
                 char unrok[10] = "UNROK m***";
