@@ -1,11 +1,34 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Random;
 
 public class labyrinthe{
 
+    static int fileId=0;
 
-
-
+    static void writeInFile(char[][] labyrinthe){
+        String fileName="labyrinthe"+fileId+".txt";
+        fileId++;
+        //File file=new File(fileName);
+        try {
+            FileWriter fileWriter=new FileWriter(fileName);
+            PrintWriter printWriter=new PrintWriter(fileWriter);
+            for(int i=0;i<labyrinthe.length;i++){
+                for(int j=0;j<labyrinthe[i].length;j++){
+                    printWriter.print(labyrinthe[i][j]);
+                }
+                printWriter.println();
+            }
+            printWriter.close();
+            fileWriter.close();
+        } catch (IOException e) {
+            
+            e.printStackTrace();
+        }
+    }
 
     static char[][] create_maze_grid(int w,int l){
         int length=2*l+4;
@@ -196,6 +219,7 @@ public class labyrinthe{
         LinkedList<Integer> last_direction=new LinkedList<Integer>();
         maze=create_maze_rec(maze,3,3,last_direction);
         print_maze(maze);
+        writeInFile(maze);
     }
 
 }
