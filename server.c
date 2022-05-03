@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -237,6 +238,18 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player* info_joueur)
         }
         return 0;
     }
+    for(uint8_t a = 0; a < strlen(id); a++)
+    {
+        if(!isalnum(id[a]))
+        {
+            printf("L'id est invalide (ne contient pas uniquement des caractères alphanumériques)'.\n");
+            if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+            {
+                perror("Erreur lors de l'envoi du message [REGNO***].\n");
+            }
+            return 0;
+        }
+    }
     // Création du socket UDP
     int sock_udp;
     struct sockaddr_in sockaddress;
@@ -267,8 +280,8 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player* info_joueur)
         if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
         {
             perror("Erreur lors de l'envoi du message [REGNO***].\n");
-            return 0;
         }
+        return 0;
     }
     for(j = 0; parties[i].disponibilite[j] != 0; j++){}
     parties[i].disponibilite[j] = 1;
@@ -290,8 +303,7 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player* info_joueur)
     memcpy(regok + 6 + sizeof(uint8_t), "***", strlen("***"));
     if(write(sock, regok, 10) == -1)
     {
-        perror("Erreur lors de l'envoi du message [REGOK].\n");
-        return 0;
+        perror("Erreur lors de l'envoi du message [REGOK***].\n");
     }
     printf("Le joueur %s est inscrit dans la partie numéro %d.\n", id, *m);
     return i;
