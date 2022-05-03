@@ -303,8 +303,9 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player* info_joueur)
     memcpy(regok + 6 + sizeof(uint8_t), "***", strlen("***"));
     if(write(sock, regok, 10) == -1)
     {
-        perror("Erreur lors de l'envoi du message [REGOK***].\n");
+        perror("Erreur lors de l'envoi du message [REGOK m***].\n");
     }
+    id[8] = '\0';
     printf("Le joueur %s est inscrit dans la partie numéro %d.\n", id, *m);
     return i;
 }
