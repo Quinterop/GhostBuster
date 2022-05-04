@@ -215,11 +215,13 @@ public class labyrinthe{
     }
 
     public static void main(String[] args) {
-        char[][] maze=create_maze_grid(8,8);
-        LinkedList<Integer> last_direction=new LinkedList<Integer>();
-        maze=create_maze_rec(maze,3,3,last_direction);
-        print_maze(maze);
-        writeInFile(maze);
+        for(int i=0;i<10;i++){
+            char[][] maze=create_maze_grid(8,8);
+            LinkedList<Integer> last_direction=new LinkedList<Integer>();
+            maze=create_maze_rec(maze,3,3,last_direction);
+            print_maze(maze);
+            writeInFile(maze);
+        }
     }
 
 }
