@@ -1,34 +1,21 @@
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 public class Client {
+    public static void main(String[] args) throws IOException {
+        Client client=new Client();
+        client.connect(4242);
+        client.out.println("NEWPL smilouuu 4244");
+        String a=client.in.readLine();
+        System.out.println(a);
+    }
 
-    private String name;
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
-
-
-    public static void main(String[] args) {
-        try{
-            DatagramSocket dso=new DatagramSocket(5555);
-            byte[]data=new byte[100];
-            while(true){
-                DatagramPacket paquet=new DatagramPacket(data,data.length);
-                dso.receive(paquet);
-                String st=new String(paquet.getData(),0,paquet.getLength());
-                System.out.println("J'ai reçu :"+st);
-                if(st.equals("fin")){
-                    break;
-                }
-            }
-            dso.close();
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
-
-    
 
     public Client() {
         // Initialize the socket
@@ -39,10 +26,10 @@ public class Client {
         out = null;
     }
 
-    public void connect() {
+    public void connect(int port) {
         try {
             // Create a new socket
-            socket = new Socket("localhost", 4444);
+            socket = new Socket("localhost", port);
             // Create a new input stream
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             // Create a new output stream
@@ -81,20 +68,8 @@ public class Client {
         }
         return null;
     }
-
-    
-
-
-
-
 }
     
-    
-
-
-
-
-
-
+    //connect to tcp
     
 
