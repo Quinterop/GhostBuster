@@ -17,9 +17,9 @@ public class Client {
     private static int maxReadUDP = 50;
     
     public static void main(String[] args) {
+        connect();
         pseudo = args[0];
         port = Integer.parseInt(args[1]);
-        connect();
         //avant la game 
         System.out.println("AVANT PARTIE");
         
@@ -29,13 +29,16 @@ public class Client {
         System.out.println("AFFICHAGE DES PARTIES");
         char[] first = recieveTCPMessage();
         int nbgames = first[6];
-        System.out.println(nbgames);
+        System.out.println("nbgames"+nbgames);
         
         for (int i = 0; i < nbgames; i++) {
-            System.out.println(recieveTCPMessage());
+
+            char[] gamei = (recieveTCPMessage());
+            System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
         }
         System.out.println("2 : creer une partie");
         System.out.println("3 : rejoindre une partie");
+        System.out.println("7 : ");
         int choice = sc.nextInt();
         
         switch (choice){
@@ -44,7 +47,13 @@ public class Client {
                 System.out.println("choisir port");
                 int newport = sc.nextInt();
                 sendTCPMessage("NEWPL "+pseudo+" "+newport+"***");
-                System.out.println(recieveTCPMessage());
+
+                char[] reg = (recieveTCPMessage());
+                if(reg[3]=='N'){
+                    System.out.println("echec rejoindre partie");
+                }else{
+                    System.out.println("enregistré dans la partie"+reg[6]);
+                }
             break;
             case 2:
                 System.out.println("incription a une partie");
@@ -69,6 +78,14 @@ public class Client {
             case 4:
             System.out.println("quitter partie");
             sendTCPMessage("UNREG***");
+            char[] reponse = recieveTCPMessage();
+            if (new String(reponse) == "DUNNO***") {
+                System.out.println("Erreur lors de la tentative de désinscription.");
+            }
+            else {
+                int m = reponse[6];
+                System.out.println("Désinscris de la partie " + m + ".");
+            }
             System.out.println(recieveTCPMessage());
             pregame();
             break;
