@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -12,14 +13,16 @@ public class Client {
     private static Socket socket;
     private static BufferedReader in;
     private static PrintWriter out;
+    private static DataOutputStream outB;
     private static int port;
-    private static int maxReadTCP = 50;
     private static int maxReadUDP = 50;
+    private static String portUdp = "5656";
     
     public static void main(String[] args) {
-        connect();
+        
         pseudo = args[0];
         port = Integer.parseInt(args[1]);
+        connect();
         //avant la game 
         System.out.println("AVANT PARTIE");
         
@@ -27,41 +30,59 @@ public class Client {
         //AFFICHER PARTIES
         Scanner sc = new Scanner(System.in);
         System.out.println("AFFICHAGE DES PARTIES");
-        char[] first = recieveTCPMessage();
+        char[] first = recieveTCPMessage(10);
         int nbgames = first[6];
         System.out.println("nbgames"+nbgames);
+        if(nbgames>0)
+            
         
         for (int i = 0; i < nbgames; i++) {
 
-            char[] gamei = (recieveTCPMessage());
+            char[] gamei = (recieveTCPMessage(12));
             System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
         }
-        System.out.println("2 : creer une partie");
-        System.out.println("3 : rejoindre une partie");
-        System.out.println("7 : ");
+        System.out.println("1 : creer une partie");
+        System.out.println("2 : rejoindre une partie");
         int choice = sc.nextInt();
         
         switch (choice){
             case 1:
                 System.out.println("creation partie");
-                System.out.println("choisir port");
-                int newport = sc.nextInt();
-                sendTCPMessage("NEWPL "+pseudo+" "+newport+"***");
+                
+                
+                String mess =("NEWPL "+pseudo+" "+portUdp+"***");
+                //byte[] message2 = mess.getBytes();
+                sendTCPMessage(mess);
 
-                char[] reg = (recieveTCPMessage());
+                char[] reg = (recieveTCPMessage(10));
                 if(reg[3]=='N'){
-                    System.out.println("echec rejoindre partie");
+                    System.out.println("echec creer partie");
                 }else{
-                    System.out.println("enregistré dans la partie"+reg[6]);
+                    System.out.println("partie créee "+reg[6]);
                 }
             break;
             case 2:
                 System.out.println("incription a une partie");
-                System.out.println("choisir port");
-                int newport2 = sc.nextInt();
-                int numeropartie = sc.nextInt(); //mettre sur 1 octet
-                sendTCPMessage("REGIS "+pseudo+" "+newport2+" "+numeropartie+"***");
-                System.out.println(recieveTCPMessage());
+                //sc.nextLine();
+                System.out.println("choisir partie");
+               // int numeropartie = sc.nextInt(); //mettre sur 1 octet
+                Byte a = 1;
+                int numeropartie = a & 0xFF;
+                String message = ("REGIS "+pseudo+" "+portUdp+" "+"X"+"***");
+                byte[] messageByte = message.getBytes();
+
+
+                
+
+                messageByte[20] = (byte) numeropartie;
+                sendTCPMessage(messageByte);
+
+                char[] reg2 = (recieveTCPMessage(10));
+                if(reg2[3]=='N'){
+                    System.out.println("echec rejoindre partie");
+                }else{
+                    System.out.println("enregistré dans la partie"+reg2[6]);
+                }
             break;
         }
         sc.close();
@@ -70,23 +91,23 @@ public class Client {
     
     
     public static void pregame(){
+        //scan int
         Scanner sc = new Scanner(System.in);
-        int choice = sc.nextInt();
+        int choice = Integer.parseInt(sc.nextLine());
         
         switch(choice){
             
             case 4:
             System.out.println("quitter partie");
             sendTCPMessage("UNREG***");
-            char[] reponse = recieveTCPMessage();
-            if (new String(reponse) == "DUNNO***") {
-                System.out.println("Erreur lors de la tentative de désinscription.");
+            char[] prem = recieveTCPMessage(1);
+            if(prem[0]=='D'){
+                System.out.println("D"+new String(recieveTCPMessage(8)));
+            }else{
+                char[] ok = recieveTCPMessage(9);
+                int partie = ok[5];
+                System.out.println("ok quitter "+partie);
             }
-            else {
-                int m = reponse[6];
-                System.out.println("Désinscris de la partie " + m + ".");
-            }
-            System.out.println(recieveTCPMessage());
             pregame();
             break;
             case 5:
@@ -94,7 +115,16 @@ public class Client {
             System.out.println("quelle partie");
             int numero = sc.nextInt();
             sendTCPMessage("SIZE? "+numero+"***");
-            System.out.println(recieveTCPMessage());
+            char[] prem2 = (recieveTCPMessage(1));
+            if(prem2[0]=='D'){
+                System.out.println("D"+new String(recieveTCPMessage(8)));
+            }else{
+                char[] ok = recieveTCPMessage(13);
+                int partie = ok[5];
+                int taille = ok[7];
+                int taille2 = ok[9];
+                System.out.println("taille de la partie "+partie+" : hauteur"+taille+" largeur"+taille2);
+            }
             pregame();
             break;
             case 6:
@@ -136,6 +166,7 @@ public class Client {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             // Create a new output stream
             out = new PrintWriter(socket.getOutputStream(), true);
+            outB = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             System.out.println("Error: " + e);
             System.err.println("Could not connect to the server.");
@@ -159,13 +190,13 @@ public class Client {
     }
     
        //recieve tcp message
-    public static char[] recieveTCPMessage() {
+    public static char[] recieveTCPMessage(int size) {
         try {
             //read from the input stream
-            char[] buffer = new char[maxReadTCP];
-            System.out.println("caracteres lus" + in.read(buffer,0,maxReadTCP));
+            char[] buffer = new char[size];
+            System.out.println("caracteres lus" + in.read(buffer,0,size));
 
-            for(int i = 0; i < maxReadTCP; i++) System.out.print(buffer[i]);
+            for(int i = 0; i < size; i++) System.out.print(buffer[i]);
                 
             //convert the buffer to a string
            // String line = new String(buffer);
@@ -181,7 +212,15 @@ public class Client {
 
 
     public static void sendTCPMessage(String message) {
-        out.println(message);
+        out.print(message);
+    }
+    public static void sendTCPMessage(byte[] message) {
+        try {
+            outB.write(message);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
     
     public static String recieveUdpMessage() {
