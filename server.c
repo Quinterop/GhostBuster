@@ -31,6 +31,8 @@ struct lobby
     uint8_t s; // nombre de joueurs inscrits
     uint16_t largeur; // largeur du plateau
     uint16_t hauteur; // hauteur du plateau
+    uint8_t f; // nombre de fantômes
+    char** plateau; // plateau de jeu
 };
 
 void* joueur(void* sock2);
@@ -41,68 +43,10 @@ void unreg(int sock, uint8_t* m, int i, struct player info_joueur);
 void size(int sock, uint8_t* m, struct player info_joueur);
 void list(int sock, uint8_t* m);
 int is_lobby_ready(int m);
+char** parse_txt(char* filename, int* nb_lines);
 
 uint8_t n = 0;
 struct lobby parties[255];
-
-int main(int argc, char* argv[])
-{
-    // Déclaration des variables
-    int port, sock, sock2, size;
-    struct sockaddr_in sockaddress, caller;
-    pthread_t th;
-
-    // Parsing de la ligne de commandes
-    if(2 != argc)
-    {
-        printf("UTILISATION :\n./serveur port_tcp\n");
-        return 0;
-    }
-    port = atoi(argv[1]);
-    printf("Ligne de commande parsée.\n");
-
-    // Création du socket TCP
-    sock = socket(PF_INET, SOCK_STREAM, 0);
-    if(sock == -1)
-    {
-        printf("Erreur lors de la création du socket.\n");
-        return 1;
-    }
-    sockaddress.sin_family = AF_INET;
-    sockaddress.sin_port = htons(port);
-    sockaddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    printf("Socket TCP créée.\n");
-
-    // Binding
-    if(bind(sock, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) < 0)
-    {
-        perror("Erreur lors du binding du serveur.\n");
-        return 1;
-    }
-    printf("Binding fait.\n");
-
-    // Listen
-    if(listen(sock, 3) != 0)
-    {
-        perror("Erreur lors de la création du serveur.\n");
-        return 1;
-    }
-    printf("En attente d'une connexion TCP...\n");
-    
-    size = sizeof(struct sockaddr_in);
-    while(1)
-    {
-        sock2 = accept(sock, (struct sockaddr*) &caller, (socklen_t*) &size);
-        printf("Connexion TCP acceptée.\n");
-        pthread_create(&th, NULL, joueur, (void*) &sock2);
-    }
-    if(sock2 < 0)
-    {
-        perror("Connexion échouée.\n");
-        return 1;
-    }
-    return 0;
-}
 
 void* joueur(void* sock2)
 {
@@ -121,6 +65,7 @@ void* joueur(void* sock2)
 
     // Réception du message
     uint8_t m, i = 0;
+    
 
     while(1)
     {
@@ -169,7 +114,23 @@ void* joueur(void* sock2)
             perror("Requête reçue inattendue (attendu : [NEWPL_id_port***]/[REGIS_id_port_m***]/[START***]/[UNREG***]/[SIZE?_m***]/[LIST?_m***]/[GAME?***]).\n");
         }
     }
-            
+    if(is_lobby_ready(m))
+    {
+        printf("Partie lancée !\n");
+        parties[m].etat = 2;
+        uint8_t file_id=m%10;
+        char file_name[16];
+        sprintf(file_name,"labyrinthe%d.txt",file_id);
+        printf("%s\n",file_name);
+        int* ptr_int=malloc(sizeof(int));
+        parties[m].plateau=parse_txt(file_name,ptr_int);
+        parties[m].largeur=16;
+        parties[m].hauteur=16;
+        parties[m].f=10;
+        char buff[255];
+        sprintf(buff,"WELCO %u %u %u %u %s %s",m,parties[m].hauteur,parties[m].largeur,parties[m].f,"smilouuu","6001");
+        printf("%s\n",buff);
+    }        
     return 0;
 }
 
@@ -426,4 +387,93 @@ int is_lobby_ready(int m)
         }
     }
     return a > 0 && a == parties[m].s;
+}
+
+// function that parses a txt file and returns a string array with the lines
+char** parse_txt(char* filename, int* nb_lines)
+{
+    FILE* f = fopen(filename, "r");
+    if(f == NULL)
+    {
+        perror("Erreur lors de l'ouverture du fichier.\n");
+        fclose(f);
+        exit(1);
+    }
+    char** lines = malloc(sizeof(char*) * 255);
+    int i = 0;
+    char* buffer=malloc(sizeof(char) * 255);
+    while(fgets(buffer, 255, f) != NULL)
+    {
+        lines[i] = malloc(sizeof(char) * 255);
+        strcpy(lines[i], buffer);
+        i++;
+    }
+    *nb_lines = i;
+    fclose(f);
+    return lines;
+}
+
+
+int main(int argc, char* argv[])
+{
+    
+    // Déclaration des variables
+    int port, sock, sock2, size;
+    struct sockaddr_in sockaddress, caller;
+    pthread_t th;
+
+    // Parsing de la ligne de commandes
+    if(2 != argc)
+    {
+        printf("UTILISATION :\n./serveur port_tcp\n");
+        return 0;
+    }
+    port = atoi(argv[1]);
+    printf("Ligne de commande parsée.\n");
+
+    // Création du socket TCP
+    sock = socket(PF_INET, SOCK_STREAM, 0);
+    if(sock == -1)
+    {
+        printf("Erreur lors de la création du socket.\n");
+        return 1;
+    }
+    sockaddress.sin_family = AF_INET;
+    sockaddress.sin_port = htons(port);
+    sockaddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    printf("Socket TCP créée.\n");
+
+    // Binding
+    if(bind(sock, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) < 0)
+    {
+        perror("Erreur lors du binding du serveur.\n");
+        return 1;
+    }
+    printf("Binding fait.\n");
+
+    // Listen
+    if(listen(sock, 3) != 0)
+    {
+        perror("Erreur lors de la création du serveur.\n");
+        return 1;
+    }
+    printf("En attente d'une connexion TCP...\n");
+    
+    size = sizeof(struct sockaddr_in);
+    while(1)
+    {
+        sock2 = accept(sock, (struct sockaddr*) &caller, (socklen_t*) &size);
+        printf("Connexion TCP acceptée.\n");
+        pthread_create(&th, NULL, joueur, (void*) &sock2);
+    }
+    if(sock2 < 0)
+    {
+        perror("Connexion échouée.\n");
+        return 1;
+    }
+    //int *test=malloc(sizeof(int));
+    //char** lab=parse_txt("labyrinthe0.txt", test);
+    
+
+    return 0;
 }

@@ -6,7 +6,11 @@ import java.net.Socket;
 
 public class Client {
     public static void main(String[] args) {
-        
+        Client client = new Client();
+        int port=Integer.parseInt(args[0]);
+        client.connect(port);
+        client.out.println("REGIS_smilouuu_4244");
+        client.out.flush();
     }
 
     private Socket socket;
@@ -22,10 +26,10 @@ public class Client {
         out = null;
     }
 
-    public void connect() {
+    public void connect(int port) {
         try {
             // Create a new socket
-            socket = new Socket("localhost", 4444);
+            socket = new Socket("localhost", port);
             // Create a new input stream
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             // Create a new output stream
