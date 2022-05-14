@@ -6,5 +6,8 @@ server: server.c
 client: Client.java
 	javac Client.java
 
+labyrinthe: labyrinthe.java
+	javac labyrinthe.java
+
 clean:
 	rm server Client.class
