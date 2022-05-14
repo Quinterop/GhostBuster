@@ -1,109 +1,7 @@
-#include <arpa/inet.h>
-#include <ctype.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#define LARGEUR_DEFAUT 6
-#define HAUTEUR_DEFAUT 6
-
-struct player
-{
-    int sock; // sock du joueur
-    char id[8]; // id du joueur
-    char port[5]; // port UDP du joueur
-    uint8_t etat; // 0 -> inscrit dans aucune partie, 1 -> inscrit dans une partie mais non lancée, 2 -> en train de jouer
-    uint8_t i; // index dans les tableaux de lobby
-    uint8_t m; // partie à laquelle le joueur est inscrit
-};
-
-struct lobby
-{
-    struct player joueurs[255];
-    uint8_t disponibilite[255]; // cases disponible du tableau joueurs (0 / 1)
-    uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
-    uint8_t s; // nombre de joueurs inscrits
-    uint16_t largeur; // largeur du plateau
-    uint16_t hauteur; // hauteur du plateau
-};
-
-void* joueur(void* sock2);
-void games(int sock);
-void ogame(int sock);
-void newpl_regis(struct player* info_joueur, uint8_t is_regis);
-void unreg(struct player* info_joueur);
-void size(struct player* info_joueur);
-void list(struct player* info_joueur);
-int is_lobby_ready(uint8_t m);
+#include"server.h"
 
 uint8_t n = 0;
 struct lobby parties[255];
-
-int main(int argc, char* argv[])
-{
-    // Déclaration des variables
-    int port, sock, sock2, size;
-    struct sockaddr_in sockaddress, caller;
-    pthread_t th;
-
-    // Parsing de la ligne de commandes
-    if(2 != argc)
-    {
-        printf("UTILISATION :\n./serveur port_tcp\n");
-        return 0;
-    }
-    port = atoi(argv[1]);
-    printf("Ligne de commande parsée.\n");
-
-    // Création du socket TCP
-    sock = socket(PF_INET, SOCK_STREAM, 0);
-    if(sock == -1)
-    {
-        printf("Erreur lors de la création du socket.\n");
-        return 1;
-    }
-    sockaddress.sin_family = AF_INET;
-    sockaddress.sin_port = htons(port);
-    sockaddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    printf("Socket TCP créée.\n");
-
-    // Binding
-    if(bind(sock, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) < 0)
-    {
-        perror("Erreur lors du binding du serveur.\n");
-        return 1;
-    }
-    printf("Binding fait.\n");
-
-    // Listen
-    if(listen(sock, 3) != 0)
-    {
-        perror("Erreur lors de la création du serveur.\n");
-        return 1;
-    }
-    printf("En attente d'une connexion TCP...\n");
-    
-    size = sizeof(struct sockaddr_in);
-    while(1)
-    {
-        sock2 = accept(sock, (struct sockaddr*) &caller, (socklen_t*) &size);
-        printf("Connexion TCP acceptée.\n");
-        pthread_create(&th, NULL, joueur, (void*) &sock2);
-    }
-    if(sock2 < 0)
-    {
-        perror("Connexion échouée.\n");
-        return 1;
-    }
-    return 0;
-}
 
 void* joueur(void* sock2)
 {
@@ -419,4 +317,63 @@ int is_lobby_ready(uint8_t m)
         }
     }
     return a > 0 && a == parties[m].s;
+}
+
+int main(int argc, char* argv[])
+{
+    // Déclaration des variables
+    int port, sock, sock2, size;
+    struct sockaddr_in sockaddress, caller;
+    pthread_t th;
+
+    // Parsing de la ligne de commandes
+    if(2 != argc)
+    {
+        printf("UTILISATION :\n./serveur port_tcp\n");
+        return 0;
+    }
+    port = atoi(argv[1]);
+    printf("Ligne de commande parsée.\n");
+
+    // Création du socket TCP
+    sock = socket(PF_INET, SOCK_STREAM, 0);
+    if(sock == -1)
+    {
+        printf("Erreur lors de la création du socket.\n");
+        return 1;
+    }
+    sockaddress.sin_family = AF_INET;
+    sockaddress.sin_port = htons(port);
+    sockaddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    printf("Socket TCP créée.\n");
+
+    // Binding
+    if(bind(sock, (struct sockaddr *) &sockaddress, sizeof(struct sockaddr_in)) < 0)
+    {
+        perror("Erreur lors du binding du serveur.\n");
+        return 1;
+    }
+    printf("Binding fait.\n");
+
+    // Listen
+    if(listen(sock, 3) != 0)
+    {
+        perror("Erreur lors de la création du serveur.\n");
+        return 1;
+    }
+    printf("En attente d'une connexion TCP...\n");
+    
+    size = sizeof(struct sockaddr_in);
+    while(1)
+    {
+        sock2 = accept(sock, (struct sockaddr*) &caller, (socklen_t*) &size);
+        printf("Connexion TCP acceptée.\n");
+        pthread_create(&th, NULL, joueur, (void*) &sock2);
+    }
+    if(sock2 < 0)
+    {
+        perror("Connexion échouée.\n");
+        return 1;
+    }
+    return 0;
 }
