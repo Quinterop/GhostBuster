@@ -1,3 +1,5 @@
 Client.class
 server
+client_test.c
+client_test
 .vscode/

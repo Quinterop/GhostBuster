@@ -18,16 +18,17 @@ struct player
 {
     int sock; // sock du joueur
     char id[8]; // id du joueur
-    uint8_t inscrit; // 1 -> inscrit à une partie, 0 -> sinon
+    char port[5]; // port UDP du joueur
+    uint8_t etat; // 0 -> inscrit dans aucune partie, 1 -> inscrit dans une partie mais non lancée, 2 -> en train de jouer
+    uint8_t i; // index dans les tableaux de lobby
+    uint8_t m; // partie à laquelle le joueur est inscrit
 };
 
 struct lobby
 {
+    struct player joueurs[255];
+    uint8_t disponibilite[255]; // cases disponible du tableau joueurs (0 / 1)
     uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
-    char port[255][5]; // numéro de port du lobby
-    char ids[255][9]; // ids des joueurs inscrits dans la partie
-    uint8_t disponibilite[255]; // cases disponible du tableau 2D ids (0 / 1)
-    uint8_t start[255]; // joueurs étant prêt à lancer la partie (0 / 1)
     uint8_t s; // nombre de joueurs inscrits
     uint16_t largeur; // largeur du plateau
     uint16_t hauteur; // hauteur du plateau
@@ -36,11 +37,11 @@ struct lobby
 void* joueur(void* sock2);
 void games(int sock);
 void ogame(int sock);
-uint8_t newpl_regis(int sock, uint8_t* m, struct player info_joueur, uint8_t is_regis);
-void unreg(int sock, uint8_t* m, int i, struct player info_joueur);
-void size(int sock, uint8_t* m, struct player info_joueur);
-void list(int sock, uint8_t* m);
-int is_lobby_ready(int m);
+void newpl_regis(struct player* info_joueur, uint8_t is_regis);
+void unreg(struct player* info_joueur);
+void size(struct player* info_joueur);
+void list(struct player* info_joueur);
+int is_lobby_ready(uint8_t m);
 
 uint8_t n = 0;
 struct lobby parties[255];
@@ -110,7 +111,7 @@ void* joueur(void* sock2)
     struct player info_joueur;
     int* sock = (int*) sock2;
     info_joueur.sock = *sock;
-    info_joueur.inscrit = 0;
+    info_joueur.etat = 0;
     char message[5], buffer[3];
 
     // Envoi du message [GAMES_n***] au joueur
@@ -120,8 +121,6 @@ void* joueur(void* sock2)
     ogame(info_joueur.sock);
 
     // Réception du message
-    uint8_t m, i = 0;
-
     while(1)
     {
         printf("En attente d'une requête [NEWPL_id_port***], [REGIS_id_port_m***], [START***], [UNREG***], [SIZE?_m***], [LIST?_m***], [GAME?***].\n");
@@ -131,32 +130,31 @@ void* joueur(void* sock2)
 
         if(strcmp(message, "NEWPL") == 0) // [NEWPL_id_port***]
         {
-            i = newpl_regis(info_joueur.sock, &m, info_joueur, 0);
+            newpl_regis(&info_joueur, 0);
         }
         else if(strcmp(message, "REGIS") == 0) // [REGIS_id_port_m***]
         {
-            i = newpl_regis(info_joueur.sock, &m, info_joueur, 1);
+            newpl_regis(&info_joueur, 1);
         }
         else if(strcmp(message, "START") == 0) // [START***]
         {
             read(info_joueur.sock, buffer, 3); // ***
-            if(info_joueur.inscrit == 1)
+            if(info_joueur.etat == 1)
             {
-                parties[m].start[i] = 1;
                 break;
             }
         }
         else if(strcmp(message, "UNREG") == 0) // [UNREG***]
         {
-            unreg(info_joueur.sock, &m, i, info_joueur);
+            unreg(&info_joueur);
         }
         else if(strcmp(message, "SIZE?") == 0) // [SIZE?_m***]
         {
-            size(info_joueur.sock, &m, info_joueur);
+            size(&info_joueur);
         }
         else if(strcmp(message, "LIST?") == 0) // [LIST?_m***]
         {
-            list(info_joueur.sock, &m);
+            list(&info_joueur);
         }
         else if(strcmp(message, "GAME?") == 0) // [GAME?***]
         {
@@ -210,48 +208,46 @@ void ogame(int sock)
     printf("Message(s) [OGAME_m_s***] envoyé(s) au joueur.\n");
 }
 
-uint8_t newpl_regis(int sock, uint8_t* m, struct player info_joueur, uint8_t is_regis)
+void newpl_regis(struct player* info_joueur, uint8_t is_regis)
 {
     char id[9], port[5], buffer[3];
     uint8_t i, j;
             
-    read(sock, buffer, 1); // _
-    read(sock, id, 8); // id
-    read(sock, buffer, 1); // _
-    read(sock, port, 4); // port
+    read((*info_joueur).sock, buffer, 1); // _
+    read((*info_joueur).sock, id, 8); // id
+    read((*info_joueur).sock, buffer, 1); // _
+    read((*info_joueur).sock, port, 4); // port
     if(is_regis) // [REGIS_id_port_m***]
     {
-        read(sock, buffer, 1); // _
-        read(sock, m, sizeof(uint8_t)); // m
+        read((*info_joueur).sock, buffer, 1); // _
+        read((*info_joueur).sock, (&(*info_joueur).m), sizeof(uint8_t)); // m
     }
     else // [NEWPL_id_port***]
     {
         for(i = 0; parties[i].etat != 0; i++){}
-        *m = i;
+        (*info_joueur).m = i;
     }
-    read(sock, buffer, 3); // ***
+    read((*info_joueur).sock, buffer, 3); // ***
     id[8] = '\0', port[4] = '\0';
-    printf("id : %s\nport : %s\nm : %d\n", id, port, *m);
+    printf("id : %s\nport : %s\nm : %d\n", id, port, (*info_joueur).m);
 
-    if(info_joueur.inscrit == 1)
+    if((*info_joueur).etat == 1)
     {
         printf("Le joueur est déjà inscrit dans une partie.\n");
-        if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+        if(write((*info_joueur).sock, "REGNO***", strlen("REGNO***")) == -1)
         {
             perror("Erreur lors de l'envoi du message [REGNO***].\n");
         }
-        return 0;
     }
     for(uint8_t a = 0; a < strlen(id); a++)
     {
         if(!isalnum(id[a]))
         {
             printf("L'id est invalide (ne contient pas uniquement des caractères alphanumériques)'.\n");
-            if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+            if(write((*info_joueur).sock, "REGNO***", strlen("REGNO***")) == -1)
             {
                 perror("Erreur lors de l'envoi du message [REGNO***].\n");
             }
-            return 0;
         }
     }
     // Création du socket UDP
@@ -264,11 +260,10 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player info_joueur, uint8_t is_
     if(sock_udp == -1)
     {
         printf("Erreur lors de la création du socket.\n");
-        if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+        if(write((*info_joueur).sock, "REGNO***", strlen("REGNO***")) == -1)
         {
             perror("Erreur lors de l'envoi du message [REGNO***].\n");
         }
-        return 0;
     }
     sockaddress.sin_family = AF_INET;
     sockaddress.sin_port = htons(atoi(port));
@@ -281,11 +276,10 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player info_joueur, uint8_t is_
     else
     {
         printf("Erreur lors du binding du serveur, envoi du message [REGNO***].\n");
-        if(write(sock, "REGNO***", strlen("REGNO***")) == -1)
+        if(write((*info_joueur).sock, "REGNO***", strlen("REGNO***")) == -1)
         {
             perror("Erreur lors de l'envoi du message [REGNO***].\n");
         }
-        return 0;
     }
     for(j = 0; parties[i].disponibilite[j] != 0; j++){}
     parties[i].disponibilite[j] = 1;
@@ -300,64 +294,63 @@ uint8_t newpl_regis(int sock, uint8_t* m, struct player info_joueur, uint8_t is_
     }
 
     parties[i].s += 1;
-    strcpy(info_joueur.id, id);
-    strcpy(parties[i].ids[j], id);
-    strcpy(parties[i].port[j], port);
-    info_joueur.inscrit = 1;
+    strcpy((*info_joueur).id, id);
+    strcpy(parties[i].joueurs[j].id, id);
+    strcpy(parties[i].joueurs[j].port, port);
+    (*info_joueur).etat = 1;
 
     char regok[10] = "REGOK ";
-    memcpy(regok + 6, &m, sizeof(uint8_t)); // m
+    memcpy(regok + 6, (&(*info_joueur).m), sizeof(uint8_t)); // m
     memcpy(regok + 6 + sizeof(uint8_t), "***", strlen("***"));
-    if(write(sock, regok, 10) == -1)
+    if(write((*info_joueur).sock, regok, 10) == -1)
     {
         perror("Erreur lors de l'envoi du message [REGOK m***].\n");
     }
-    printf("Le joueur %s est inscrit dans la partie numéro %d.\n", id, *m);
-    return i;
+    printf("Le joueur %s est inscrit dans la partie numéro %d.\n", id, (*info_joueur).m);
 }
 
-void unreg(int sock, uint8_t* m, int i, struct player info_joueur)
+void unreg(struct player* info_joueur)
 {
     char buffer[3];
 
-    read(sock, buffer, 3); // ***
-    if(info_joueur.inscrit != 1)
+    read((*info_joueur).sock, buffer, 3); // ***
+    if((*info_joueur).etat != 1)
     {
         char dunno[8] = "DUNNO***";
-        if(write(sock, dunno, strlen(dunno)) == -1)
+        if(write((*info_joueur).sock, dunno, strlen(dunno)) == -1)
         {
             perror("Erreur lors de l'envoi du message [DUNNO***].\n");
         }
         return;
     }
-    strcpy(parties[*m].ids[i], "00000000");
-    parties[*m].disponibilite[i] = 0;
-    parties[*m].s--;
-    if(parties[*m].s == 0)
+    parties[(*info_joueur).m].disponibilite[(*info_joueur).i] = 0;
+    parties[(*info_joueur).m].s--;
+
+    if(parties[(*info_joueur).m].s == 0)
     {
-        parties[*m].etat = 0;
+        parties[(*info_joueur).m].etat = 0;
         n--;
     }
 
     char unrok[10] = "UNROK m***";
-    memcpy(unrok + 6, &m, sizeof(uint8_t));
-    if(write(sock, unrok, 10) == -1)
+    memcpy(unrok + 6, (&(*info_joueur).m), sizeof(uint8_t));
+    if(write((*info_joueur).sock, unrok, 10) == -1)
     {
         perror("Erreur lors de l'envoi du message [UNROK_m***].\n");
     }
 }
 
-void size(int sock, uint8_t* m, struct player info_joueur)
+void size(struct player* info_joueur)
 {
     char buffer[3];
     
-    read(sock, buffer, 1); // _
-    read(sock, &m, sizeof(uint8_t)); // m
-    read(sock, buffer, 3); // ***
-    if(parties[*m].etat == 0)
+    read((*info_joueur).sock, buffer, 1); // _
+    read((*info_joueur).sock, (&(*info_joueur).m), sizeof(uint8_t)); // m
+    read((*info_joueur).sock, buffer, 3); // ***
+    if(parties[(*info_joueur).m].etat == 0)
     {
         char dunno[8] = "DUNNO***";
-        if(write(sock, dunno, strlen(dunno)) == -1)
+        if(write((*info_joueur).sock, dunno, strlen(dunno)) == -1)
         {
             perror("Erreur lors de l'envoi du message [DUNNO***].\n");
         }
@@ -365,27 +358,27 @@ void size(int sock, uint8_t* m, struct player info_joueur)
         return;
     }
     char size[16] = "SIZE! m hh ww***"; // [SIZE!_m_h_w***]
-    memcpy(size + strlen("SIZE! "), &m, sizeof(uint8_t));
-    memcpy(size + strlen("SIZE! ") + sizeof(uint8_t) + 1, &parties[*m].hauteur, sizeof(uint16_t));
-    memcpy(size + strlen("SIZE! ") + sizeof(uint8_t) + sizeof(uint16_t) + 2, &parties[*m].largeur, sizeof(uint16_t));
-    if(write(sock, size, 16) == -1)
+    memcpy(size + strlen("SIZE! "), (&(*info_joueur).m), sizeof(uint8_t));
+    memcpy(size + strlen("SIZE! ") + sizeof(uint8_t) + 1, &parties[(*info_joueur).m].hauteur, sizeof(uint16_t));
+    memcpy(size + strlen("SIZE! ") + sizeof(uint8_t) + sizeof(uint16_t) + 2, &parties[(*info_joueur).m].largeur, sizeof(uint16_t));
+    if(write((*info_joueur).sock, size, 16) == -1)
     {
         perror("Erreur lors de l'envoi du message [SIZE!_m_h_w***].\n");
     }
-    printf("Message [SIZE!_m_h_w***] envoyé au joueur (m = %d, h = %d, w = %d).\n", *m, parties[*m].hauteur, parties[*m].largeur);
+    printf("Message [SIZE!_m_h_w***] envoyé au joueur (m = %d, h = %d, w = %d).\n", (*info_joueur).m, parties[(*info_joueur).m].hauteur, parties[(*info_joueur).m].largeur);
 }
 
-void list(int sock, uint8_t* m)
+void list(struct player* info_joueur)
 {
     char buffer[3];
 
-    read(sock, buffer, 1); // _
-    read(sock, m, sizeof(uint8_t)); // m
-    read(sock, buffer, 3); // ***
-    if(parties[*m].etat == 0)
+    read((*info_joueur).sock, buffer, 1); // _
+    read((*info_joueur).sock, (&(*info_joueur).m), sizeof(uint8_t)); // m
+    read((*info_joueur).sock, buffer, 3); // ***
+    if(parties[(*info_joueur).m].etat == 0)
     {
         char dunno[8] = "DUNNO***";
-        if(write(sock, dunno, strlen(dunno)) == -1)
+        if(write((*info_joueur).sock, dunno, strlen(dunno)) == -1)
         {
             perror("Erreur lors de l'envoi du message [DUNNO***].\n");
         }
@@ -393,20 +386,20 @@ void list(int sock, uint8_t* m)
         return;
     }
     char list[12] = "LIST! m s***";
-    memcpy(list + strlen("LIST! "), &m, sizeof(uint8_t));
-    memcpy(list + strlen("LIST! "), &parties[*m].s, sizeof(uint8_t));
-    if(write(sock, list, 12) == -1)
+    memcpy(list + strlen("LIST! "), (&(*info_joueur).m), sizeof(uint8_t));
+    memcpy(list + strlen("LIST! "), &parties[(*info_joueur).m].s, sizeof(uint8_t));
+    if(write((*info_joueur).sock, list, 12) == -1)
     {
         perror("Erreur lors de l'envoi du message [LIST! m s***].\n");
         return;
     }
     for(uint8_t i = 0; i < 255; i++)
     {
-        if(parties[*m].disponibilite[i] == 1)
+        if(parties[(*info_joueur).m].disponibilite[i] == 1)
         {
             char playr[17] = "PLAYR idididid***";
-            memcpy(playr + strlen("PLAYR "), parties[*m].ids[i], 8);
-            if(write(sock, playr, 17) == -1)
+            memcpy(playr + strlen("PLAYR "), parties[(*info_joueur).m].joueurs[i].id, 8);
+            if(write((*info_joueur).sock, playr, 17) == -1)
             {
                 perror("Erreur lors de l'envoi du message [PLAYR id***].\n");
                 return;
@@ -415,12 +408,12 @@ void list(int sock, uint8_t* m)
     }
 }
 
-int is_lobby_ready(int m)
+int is_lobby_ready(uint8_t m)
 {
     int a = 0;
     for(int i = 0; i < 255; i++)
     {
-        if(parties[m].start[i] == 1)
+        if(parties[m].joueurs[i].etat == 1)
         {
             a += 1;
         }
