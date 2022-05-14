@@ -6,10 +6,12 @@ struct lobby parties[255];
 void* joueur(void* sock2)
 {
     // Déclaration des variables
-    struct player info_joueur;
     int* sock = (int*) sock2;
+    struct player info_joueur;
     info_joueur.sock = *sock;
     info_joueur.etat = 0;
+
+    int read_size;
     char message[5], buffer[3];
 
     // Envoi du message [GAMES_n***] au joueur
@@ -22,7 +24,12 @@ void* joueur(void* sock2)
     while(1)
     {
         printf("En attente d'une requête [NEWPL_id_port***], [REGIS_id_port_m***], [START***], [UNREG***], [SIZE?_m***], [LIST?_m***], [GAME?***].\n");
-        read(info_joueur.sock, message, 5);
+        read_size = read(info_joueur.sock, message, 5);
+        if(0 >= read_size) 
+        {
+            perror("Le client s'est déconnecté.\n");
+            return 0;
+        }
         message[5] = '\0';
         printf("Requête reçue : %s\n", message);
 
