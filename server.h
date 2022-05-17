@@ -9,36 +9,57 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #define LARGEUR_DEFAUT 6
 #define HAUTEUR_DEFAUT 6
+#define FANTOMES_DEFAUT 6
 
-struct player
+typedef struct Player
 {
-    int sock; // sock du joueur
-    char id[8]; // id du joueur
+    char id[9]; // id du joueur
     char port[5]; // port UDP du joueur
+    char p[4]; // nombre de points du joueur
+    char x[4]; // coordonnée x où se trouve le joueur dans le labyrinthe
+    char y[4]; // coordonnée y où se trouve le joueur dans le labyrinthe
+    int sock_tcp; // sock du joueur
+    int sock_udp; // sock udp du joueur
+    struct sockaddr* saddr;
     uint8_t etat; // 0 -> inscrit dans aucune partie, 1 -> inscrit dans une partie mais non lancée, 2 -> en train de jouer
     uint8_t i; // index dans les tableaux de lobby
     uint8_t m; // partie à laquelle le joueur est inscrit
-};
+} Player;
 
 struct lobby
 {
-    struct player joueurs[255];
-    uint8_t disponibilite[255]; // cases disponible du tableau joueurs (0 / 1)
+    char ip[16]; // adresse IP de multi-diffusion
+    char port[5]; // port de multi-diffusion
+    int sock; // socket de multi-diffusion
+    Player* joueurs[255]; // tableau des joueurs
+    struct sockaddr* saddr;
     uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
+    uint8_t f; // nombre de fantomes dans la partie
     uint8_t s; // nombre de joueurs inscrits
-    uint16_t largeur; // largeur du plateau
-    uint16_t hauteur; // hauteur du plateau
+    uint16_t l; // largeur du plateau
+    uint16_t h; // hauteur du plateau
 };
 
-void* joueur(void* sock2);
-void games(int sock);
-void ogame(int sock);
-void newpl_regis(struct player* info_joueur, uint8_t is_regis);
-void unreg(struct player* info_joueur);
-void size(struct player* info_joueur);
-void list(struct player* info_joueur);
+void* avant_partie(void* sock2);
+void games(Player* info_joueur);
+void newpl_regis(Player* info_joueur, uint8_t is_regis);
+void unreg(Player* info_joueur);
+void size(Player* info_joueur);
+void list(Player* info_joueur);
+void welco(Player* info_joueur);
+void regno(Player* info_joueur);
+void dunno(Player* info_joueur);
+
+void partie_en_cours(Player* info_joueur);
+void gobye(Player* info_joueur);
+void glis(Player* info_joueur);
+void mall(Player* info_joueur);
+void send_mess(Player* info_joueur);
+
 int is_lobby_ready(uint8_t m);
+void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
