@@ -455,6 +455,10 @@ void partie_en_cours(Player* info_joueur)
         {
             send_mess(info_joueur);
         }
+        else
+        {
+            perror("Requête reçue inattendue (attendu : [UPMOV_d***]/[DOMOV_d***]/[LEMOV_d***]/[RIMOV_d***]/[IQUIT***]/[GLIS?***]/[MALL?_mess***]/[SEND?_id_mess***]).\n");
+        }
     }
 }
 
