@@ -276,8 +276,6 @@ void size(Player* info_joueur)
     read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
     read(info_joueur -> sock_tcp, buffer, 3); // ***
     
-    info_joueur -> m = 0;
-
     // Vérification de l'existence de la partie demandée
     if(parties[info_joueur -> m].etat == 0)
     {
@@ -595,6 +593,29 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
         return;
     }
     printf("Message [NSEND***] envoyé au joueur.\n");
+}
+
+char** parse_txt(char* filename, int* nb_lines)
+{
+    FILE* f = fopen(filename, "r");
+    if(f == NULL)
+    {
+        perror("Erreur lors de l'ouverture du fichier.\n");
+        fclose(f);
+        exit(1);
+    }
+    char** lines = malloc(sizeof(char*) * 255);
+    int i = 0;
+    char* buffer=malloc(sizeof(char) * 255);
+    while(fgets(buffer, 255, f) != NULL)
+    {
+        lines[i] = malloc(sizeof(char) * 255);
+        strcpy(lines[i], buffer);
+        i++;
+    }
+    *nb_lines = i;
+    fclose(f);
+    return lines;
 }
 
 int is_lobby_ready(uint8_t m)

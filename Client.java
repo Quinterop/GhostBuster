@@ -24,18 +24,20 @@ public class Client {
         
         pseudo = args[0];
         port = Integer.parseInt(args[1]);
+        /* pseudo = "remedy12";
+        port = 7779; */
         connect();
 
         System.out.println("AVANT PARTIE");
         System.out.println("AFFICHAGE DES PARTIES");
 
-        char[] first = recieveTCPMessage(10);
+        byte[] first = receiveTCPMessage(10);
         int nbgames = first[6];
         System.out.println("nbgames"+nbgames);
         
         for (int i = 0; i < nbgames; i++) {
 
-            char[] gamei = recieveTCPMessage(12);
+            byte[] gamei = receiveTCPMessage(12);
             System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
         }
         System.out.println("1 : creer une partie");
@@ -51,7 +53,7 @@ public class Client {
                 sendTCPMessage(mess);
                 System.out.println("Message envoyé : " + mess);
 
-                char[] reg = (recieveTCPMessage(10));
+                byte[] reg = (receiveTCPMessage(10));
                 if(reg[3]=='N'){
                     System.out.println("echec creer partie");
                 }else{
@@ -74,7 +76,7 @@ public class Client {
                 messageByte[20] = (byte) numeropartie;
                 sendTCPMessage(messageByte);
 
-                char[] reg2 = (recieveTCPMessage(10));
+                byte[] reg2 = (receiveTCPMessage(10));
                 if(reg2[3]=='N'){
                     System.out.println("echec rejoindre partie");
                 }else{
@@ -82,59 +84,64 @@ public class Client {
                 }
             break;
         }
-        System.out.println("salut les reufs");
         pregame();
     }
     
     
     public static void pregame(){
-        //scan int
+        System.out.print(
+            "Sélectionnez un choix :\n" +
+            "4/ Quitter la partie en cours\n" +
+            "5/ Demander la taille d'un lobby\n" +
+            "6/ Lister les joueurs d'un lobby\n" +
+            "7/ Lister les lobbys rejoignables\n" +
+            "8 Commencer la partie\n" +
+            "Votre choix : ");
         int choice = sc.nextInt();
         sc.nextLine();
         
         switch(choice){
-            
             case 4:
-            System.out.println("quitter partie");
-            sendTCPMessage("UNREG***");
-            char[] prem = recieveTCPMessage(1);
-            if(prem[0]=='D'){
-                System.out.println("D"+new String(recieveTCPMessage(8)));
-            }else{
-                char[] ok = recieveTCPMessage(9);
-                int partie = ok[5];
-                System.out.println("ok quitter "+partie);
-            }
-            pregame();
-            break;
+                System.out.println("quitter partie");
+                sendTCPMessage("UNREG***");
+                byte[] prem = receiveTCPMessage(1);
+                if(prem[0]=='D'){
+                    System.out.println("D"+new String(receiveTCPMessage(8)));
+                }else{
+                    byte[] ok = receiveTCPMessage(9);
+                    int partie = ok[5];
+                    System.out.println("ok quitter "+partie);
+                }
+                pregame();
+                break;
             case 5:
-            System.out.println("taille du laby d'une partie");
-            System.out.println("quelle partie");
-            int numero = sc.nextInt();
-            sendTCPMessage("SIZE? "+numero+"***");
-            /* String test;
-                try {
-                    test = reqTCP();
-                    System.out.println(test);
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-             */
-            char[] prem2 = (recieveTCPMessage(1));
-            if(prem2[0]=='D'){
-                System.out.println("D"+new String(recieveTCPMessage(8)));
-            }else{
-                char[] ok = recieveTCPMessage(15);
-                for(int i = 0; i < ok.length; i++)
+                System.out.print("Sélectionnez le numéro de la partie : ");
+                int user_m = sc.nextInt();
+                sendTCPMessage("SIZE? " + (char) user_m + "***");
+
+                String requete = new String(receiveTCPMessage(6));
+                if(requete.equals("DUNNO ")) 
                 {
-                    System.out.println("char " + i + " = " + ok[i]);
+                    System.out.println("La partie demandée n'existe pas.");
+                    pregame();
                 }
-                int partie = ok[5];
-                int i = ok[8] * 256 + ok[7];
-                System.out.println("taille de la partie "+partie+" : hauteur"+ i);
-            }
-            pregame();
+                else if(!requete.equals("SIZE! "))
+                {
+                    System.out.println("Requête reçue inattendue.");
+                    pregame();
+                }
+
+                // Réponse attendue : [SIZE!_m_h_w***]
+                byte[] m = receiveTCPMessage(1); // m
+                receiveTCPMessage(1); // _
+                byte[] h = receiveTCPMessage(2); // h
+                receiveTCPMessage(1); // _
+                byte[] w = receiveTCPMessage(2); // w
+                receiveTCPMessage(3); // ***
+                int test2 = (w[0] & 0xff) + (w[1] & 0xff) * 0x100;
+                System.out.println(test2);
+                System.out.println("La partie " + (int) m[0] + " a pour hauteur " + (int) ((h[0] & 0xff) + (h[1] & 0xff) * 0x100) + " cases et pour largeur " + (int) ((w[0] & 0xff) + (w[1] & 0xff) * 0x100) + " cases.");
+                pregame();
             break;
             case 6:
             System.out.println("liste de joueurs");
@@ -199,24 +206,29 @@ public class Client {
     }
     
        //recieve tcp message
-    public static char[] recieveTCPMessage(int size) {
-        try {
-            //read from the input stream
+    public static byte[] receiveTCPMessage(int size) {
+        /* try 
+        {
             char[] buffer = new char[size];
-            System.out.println("caracteres lus" + in.read(buffer,0,size));
+            System.out.println("Nombre de caractères lus : " + in.read(buffer, 0, size));
 
-            for(int i = 0; i < size; i++) System.out.print(buffer[i]);
+            for(int i = 0; i < size; i++) System.out.println("'" + buffer[i] + "' (" + (int) buffer[i] + ")");
                 
-            //convert the buffer to a string
-           // String line = new String(buffer);
-            // Return the line
-            //return line;
             return buffer;
-        } catch (IOException e) {
+        } 
+        catch (IOException e) 
+        {     
             System.err.println("Could not read from the input stream.");
-            System.exit(1);
+            return new char[]{};
+        } */
+        byte[] data=new byte[size];
+        try{
+            socket.getInputStream().read(data);
         }
-        return null;
+        catch(IOException e){
+            System.out.println("Erreur de lecture");
+        }
+        return data;
     }
 
 
