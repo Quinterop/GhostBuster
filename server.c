@@ -275,6 +275,8 @@ void size(Player* info_joueur)
     read(info_joueur -> sock_tcp, buffer, 1); // _
     read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
     read(info_joueur -> sock_tcp, buffer, 3); // ***
+    
+    info_joueur -> m = 0;
 
     // Vérification de l'existence de la partie demandée
     if(parties[info_joueur -> m].etat == 0)
@@ -568,10 +570,10 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
             memcpy(messp + 15, mess, strlen(mess));
             if(sendto(parties[info_joueur -> m].joueurs[i] -> sock_udp, messp, strlen(messp), 0, parties[info_joueur -> m].joueurs[i] -> saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
             {
-                perror("Erreur lors de l'envoi en multicast du message [SEND?_id2_mess+++].\n");
+                perror("Erreur lors de l'envoi du message [SEND?_id2_mess+++].\n");
                 return;
             }
-            printf("Message [SEND?_id2_mess+++] envoyés en multicast (id2 = %s, mess = %s).\n", info_joueur -> id, mess);
+            printf("Message [SEND?_id2_mess+++] envoyé en UDP au joueur %s (id2 = %s, mess = %s).\n", info_joueur -> id, info_joueur -> id, mess);
             
             // Envoi du message [SEND!***]
             char send2[8] = "SEND!***";

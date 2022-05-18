@@ -17,28 +17,25 @@ public class Client {
     private static int port;
     private static int maxReadUDP = 50;
     private static String portUdp = "5656";
+    private static Scanner sc = new Scanner(System.in);
+
     
     public static void main(String[] args) {
         
         pseudo = args[0];
         port = Integer.parseInt(args[1]);
         connect();
-        //avant la game 
+
         System.out.println("AVANT PARTIE");
-        
-        //int ip = sc.nextInt();
-        //AFFICHER PARTIES
-        Scanner sc = new Scanner(System.in);
         System.out.println("AFFICHAGE DES PARTIES");
+
         char[] first = recieveTCPMessage(10);
         int nbgames = first[6];
         System.out.println("nbgames"+nbgames);
-        if(nbgames>0)
-            
         
         for (int i = 0; i < nbgames; i++) {
 
-            char[] gamei = (recieveTCPMessage(12));
+            char[] gamei = recieveTCPMessage(12);
             System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
         }
         System.out.println("1 : creer une partie");
@@ -50,9 +47,9 @@ public class Client {
                 System.out.println("creation partie");
                 
                 
-                String mess =("NEWPL "+pseudo+" "+portUdp+"***");
-                //byte[] message2 = mess.getBytes();
+                String mess = "NEWPL " + pseudo + " " + portUdp + "***";
                 sendTCPMessage(mess);
+                System.out.println("Message envoyé : " + mess);
 
                 char[] reg = (recieveTCPMessage(10));
                 if(reg[3]=='N'){
@@ -85,15 +82,15 @@ public class Client {
                 }
             break;
         }
-        sc.close();
+        System.out.println("salut les reufs");
         pregame();
     }
     
     
     public static void pregame(){
         //scan int
-        Scanner sc = new Scanner(System.in);
-        int choice = Integer.parseInt(sc.nextLine());
+        int choice = sc.nextInt();
+        sc.nextLine();
         
         switch(choice){
             
@@ -115,15 +112,27 @@ public class Client {
             System.out.println("quelle partie");
             int numero = sc.nextInt();
             sendTCPMessage("SIZE? "+numero+"***");
+            /* String test;
+                try {
+                    test = reqTCP();
+                    System.out.println(test);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+             */
             char[] prem2 = (recieveTCPMessage(1));
             if(prem2[0]=='D'){
                 System.out.println("D"+new String(recieveTCPMessage(8)));
             }else{
-                char[] ok = recieveTCPMessage(13);
+                char[] ok = recieveTCPMessage(15);
+                for(int i = 0; i < ok.length; i++)
+                {
+                    System.out.println("char " + i + " = " + ok[i]);
+                }
                 int partie = ok[5];
-                int taille = ok[7];
-                int taille2 = ok[9];
-                System.out.println("taille de la partie "+partie+" : hauteur"+taille+" largeur"+taille2);
+                int i = ok[8] * 256 + ok[7];
+                System.out.println("taille de la partie "+partie+" : hauteur"+ i);
             }
             pregame();
             break;
@@ -136,7 +145,7 @@ public class Client {
             break;
             case 7:
             System.out.println("liste des parties nn vides");
-            sendTCPMessage("GAME? ***");
+            sendTCPMessage("GAME?***");
             /*String first = recieveTCPMessage();
             int nbgames = Integer.valueOf(first);
             System.out.println(first);
@@ -213,7 +222,9 @@ public class Client {
 
     public static void sendTCPMessage(String message) {
         out.print(message);
+        out.flush();
     }
+
     public static void sendTCPMessage(byte[] message) {
         try {
             outB.write(message);
@@ -238,30 +249,27 @@ public class Client {
         }
     }
 
- 
-
-
-
-    //find int in string after char
-    public static int findInt(String str, char c) {
-        int i = str.indexOf(c);
-        int intsize = 0;
-        for(int j = i; j<str.length(); j++){
-            if(!charIsInt(str.charAt(i))){
-                intsize=i-j;
-                break;
+    public static String reqTCP() throws IOException{
+        String message = "";
+        char tmp;
+        boolean isEndRequest = false;
+        int compteur=0;
+        System.out.println("entrez votre message");
+        while(!isEndRequest) {
+            System.out.println("test read");
+            tmp=(char)in.read();
+            System.out.println("lu: "+tmp);
+            System.out.println("int: " + (int) tmp);
+            message+=tmp;
+            if(tmp=='*') {
+                compteur++;
+            }
+            if(compteur==3) {
+                isEndRequest=true;
             }
         }
-        return Integer.parseInt(str.substring(i, i+intsize));
-    }
-
-    public static boolean charIsInt(char c){
-        try {
-            Integer.parseInt(String.valueOf(c));
-            return true;
-        } catch(NumberFormatException nfe) {
-            return false;
-        }
+        System.out.println("Message reçu: "+message);
+        return message;
     }
 }
 
