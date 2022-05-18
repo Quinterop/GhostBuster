@@ -23,6 +23,7 @@ public class Communication implements Runnable{
             while(true){
                 byte[] buffer = new byte[218];
                 socket.receive(new java.net.DatagramPacket(buffer, buffer.length));
+                System.out.println("oueeeeeeeeee");
                 String reçu = new String(buffer);
                 String user=reçu.substring(6,14);
                 String message=reçu.substring(15,reçu.length()-4);

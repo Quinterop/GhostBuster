@@ -167,7 +167,7 @@ public class Client {
             sendTCPMessage("START***");
             
             //[WELCO␣m␣h␣w␣f␣ip␣port***]
-            byte[] start = receiveTCPMessage(24);
+            /*byte[] start = receiveTCPMessage(24);
             String mess = new String(start);
             System.out.println(new String(mess));
             int partie = start[6];
@@ -177,11 +177,15 @@ public class Client {
             int nbFant = start[14]; //A TESTER
             String ip = mess.substring(13,28);
             String portString = mess.substring(29,33);
-            int port=Integer.parseInt(portString);
+            int port=Integer.parseInt(portString);*/
+            String[] start=welc();
+            String ip=start[0];
+            int port=Integer.parseInt(start[1]);
             communication=new Communication(ip,port);
             Thread t = new Thread(communication);
             t.start();
-            inGame();
+            //inGame();
+            enJeu();
             break;
             default:
             System.out.println("erreur");
@@ -191,7 +195,7 @@ public class Client {
         //System.out.println("la partie a commencé");
     }
     
-    public static void inGame(){
+    /*public static void inGame(){
         //POSIT␣id␣x␣y***
         byte[] pos = receiveTCPMessage(25);
         String mess = new String(pos);
@@ -401,7 +405,7 @@ public class Client {
             }
             case 7:{
                 System.out.println("chat privé");
-                System.out.println("qui voulez vous envoyer un message ?");
+                System.out.println("a qui voulez vous envoyer un message ?");
                 String dest = sc.nextLine();
                 System.out.println("message ?");
                 String msg = sc.nextLine();
@@ -415,8 +419,253 @@ public class Client {
         }
         inGame();
         
-    }
+    }*/
     
+
+
+    public static void enJeu(){
+        //POSIT␣id␣x␣y***
+        Scanner sc = new Scanner(System.in);
+        byte[] pos = receiveTCPMessage(25);
+        String mess = new String(pos);
+        System.out.println(mess);
+        String id = mess.substring(6,14);
+        int x = Integer.valueOf(mess.substring(15,18));
+        int y = Integer.valueOf(mess.substring(19,22));
+        System.out.println("id : "+id+" position : x="+x+" y="+y);
+        boolean fin = false;
+        while(!fin){
+            System.out.println("choisissez une action");
+            System.out.println("se déplacer: Haut/Bas/Gauche/Droite -> 0/1/2/3");
+            System.out.println("quitter la partie: 4");
+            System.out.println("liste des joueurs: 5");
+            System.out.println("chat: privé/général -> 6/7");
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            switch(choice){
+                //MOUVEMENTS
+                case 0:{
+                    System.out.println("combien de cases ?");
+                    int nb = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("mouvement haut de "+nb+" cases");
+                    String out = "UPMOV "+nb+"***";
+                    sendTCPMessage(out);
+                    
+                    //MOVEF␣x␣y␣p***
+                    byte[] prem = receiveTCPMessage(5);
+                    if(prem[4]=='E'){
+                        byte[] suite = receiveTCPMessage(3);
+                        String full = new String(prem)+new String(suite);
+                        System.out.println(full);
+                        System.out.println("partie terminée");
+                        return;
+                    }
+                    else if(prem[4]=='F'){
+                        System.out.println("fantome attrapé");
+                        byte[] suite = receiveTCPMessage(15);
+                        String full = new String(prem)+new String(suite);
+                        
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        int p = Integer.valueOf(full.substring(14,17));
+                        System.out.println(full);
+                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                    }else {
+                        //MOVE!␣x␣y***
+                        byte[] suite = receiveTCPMessage(11);
+                        String full = new String(prem)+new String(suite);
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        System.out.println(full);
+                        System.out.println("position : x : "+x2+" y : "+y2);
+                        
+                    }
+                break;
+                }
+                case 1:{
+                    System.out.println("combien de cases ?");
+                    int nb = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("mouvement bas de "+nb+" cases");
+                    String out = "DOMOV "+nb+"***";
+                    sendTCPMessage(out);
+                    
+                    //MOVEF␣x␣y␣p***
+                    byte[] prem = receiveTCPMessage(5);
+
+                    if(prem[4]=='E'){
+                        byte[] suite = receiveTCPMessage(3);
+                        String full = new String(prem)+new String(suite);
+                        System.out.println(full);
+                        System.out.println("partie terminée");
+                        return;
+                    }
+                    else if(prem[4]=='F'){
+                        System.out.println("fantome attrapé");
+                        byte[] suite = receiveTCPMessage(15);
+                        String full = new String(prem)+new String(suite);
+                        
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        int p = Integer.valueOf(full.substring(14,17));
+                        System.out.println(full);
+                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                    }else {
+                        //MOVE!␣x␣y***
+                        byte[] suite = receiveTCPMessage(11);
+                        String full = new String(prem)+new String(suite);
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        System.out.println(full);
+                        System.out.println("position : x : "+x2+" y : "+y2);
+                        
+                    }
+                break;
+                }
+                case 2:{
+                    System.out.println("combien de cases ?");
+                    int nb = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("mouvement gauche de "+nb+" cases");
+                    String out = "LEMOV "+nb+"***";
+                    sendTCPMessage(out);
+                    
+                    //MOVEF␣x␣y␣p***
+                    byte[] prem = receiveTCPMessage(5);
+
+                    if(prem[4]=='E'){
+                        byte[] suite = receiveTCPMessage(3);
+                        String full = new String(prem)+new String(suite);
+                        System.out.println(full);
+                        System.out.println("partie terminée");
+                        return;
+                    }
+                    else if(prem[4]=='F'){
+                        System.out.println("fantome attrapé");
+                        byte[] suite = receiveTCPMessage(15);
+                        String full = new String(prem)+new String(suite);
+                        
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        int p = Integer.valueOf(full.substring(14,17));
+                        System.out.println(full);
+                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                    }else {
+                        //MOVE!␣x␣y***
+                        byte[] suite = receiveTCPMessage(11);
+                        String full = new String(prem)+new String(suite);
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        System.out.println(full);
+                        System.out.println("position : x : "+x2+" y : "+y2);
+                        
+                    }
+                break;
+                }
+                case 3:{
+                    System.out.println("combien de cases ?");
+                    int nb = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("mouvement droite de "+nb+" cases");
+                    String out = "RIMOV "+nb+"***";
+                    sendTCPMessage(out);
+                    
+                    //MOVEF␣x␣y␣p***
+                    byte[] prem = receiveTCPMessage(5);
+                    if(prem[4]=='E'){
+                        byte[] suite = receiveTCPMessage(3);
+                        String full = new String(prem)+new String(suite);
+                        System.out.println(full);
+                        System.out.println("partie terminée");
+                        return;
+                    }
+                    else if(prem[4]=='F'){
+                        System.out.println("fantome attrapé");
+                        byte[] suite = receiveTCPMessage(15);
+                        String full = new String(prem)+new String(suite);
+                        
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        int p = Integer.valueOf(full.substring(14,17));
+                        System.out.println(full);
+                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                    }else {
+                        //MOVE!␣x␣y***
+                        byte[] suite = receiveTCPMessage(11);
+                        String full = new String(prem)+new String(suite);
+                        int x2 = Integer.valueOf(full.substring(6,9));
+                        int y2 = Integer.valueOf(full.substring(10,13));
+                        System.out.println(full);
+                        System.out.println("position : x : "+x2+" y : "+y2); 
+                    }
+                break;
+                }
+                case 4:{
+                    System.out.println("quitter partie");
+                    sendTCPMessage("IQUIT***");
+                    byte[] prem = receiveTCPMessage(8);
+                    System.out.println(new String(prem));
+                    fin=true;
+                    break;
+                }
+                case 5:{
+                    System.out.println("liste des joueurs");
+                    sendTCPMessage("GLIS?***");
+                    byte[] first = receiveTCPMessage(10);
+
+                    if(first[4]=='E'){
+                        System.out.println(first);
+                        System.out.println("partie terminée");
+                        return;
+                    }
+                    
+                    int nbplayers = first[7];
+                    System.out.println(new String(first));
+                    
+                    for (int i = 0; i < nbplayers; i++) {
+                        //GPLYR␣id␣x␣y␣p***
+                        byte[] player = receiveTCPMessage(29);
+                        String mess2 = new String(player);
+                        String id2 = mess2.substring(6,14);
+                        int x2 = Integer.valueOf(mess2.substring(15,18));
+                        int y2 = Integer.valueOf(mess2.substring(19,22));
+                        int p = Integer.valueOf(mess2.substring(23,26));
+                        System.out.println(mess2);
+                        System.out.println("Joueur "+id2+"position : x : "+x2+" y : "+y2+ " points : "+p);
+                    }
+                    
+                    System.out.println("ok liste des joueurs");
+                    break;
+                }
+                case 6:{
+                    System.out.println("Chat privé");
+                    System.out.println("A qui voulez vous envoyer un message ?");
+                    String dest = sc.nextLine();
+                    System.out.println("Que voulez vous envoyer ?");
+                    String msg = sc.nextLine();
+                    String out = "SEND? "+dest+" "+msg+"***";
+                    sendTCPMessage(out);
+                    break;
+                }
+                case 7:{
+                    System.out.println("Chat global");
+                    System.out.println("Que voulez vous envoyer ?");
+                    String msg = sc.nextLine();
+                    String out = "MALL? "+msg+"***";
+                    sendTCPMessage(out);
+                    break;
+                }
+            } 
+        }
+        sc.close();
+    }
+
     public static void connect() {
         try {
             // Create a new socket
@@ -470,7 +719,6 @@ public class Client {
         try {
             outB.write(message);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -511,5 +759,50 @@ public class Client {
         }
         System.out.println("Message reçu: "+message);
         return message;
+    }
+
+    public static String[] welc(){
+        //[WELCO␣m␣h␣w␣f␣ip␣port***]
+        String[] tmp = new String[2];
+        String requete = new String(receiveTCPMessage(6));
+        if(requete.equals("DUNNO ")) 
+        {
+            System.out.println("La partie demandée n'existe pas.");
+            pregame();
+        }
+        else if(!requete.equals("WELCO "))
+        {
+            System.out.println("Requête reçue inattendue.");
+            pregame();
+        }
+        byte[] m = receiveTCPMessage(1); // m
+        receiveTCPMessage(1); // _
+        byte[] h = receiveTCPMessage(2); // h
+        receiveTCPMessage(1); // _
+        byte[] w = receiveTCPMessage(2); // w
+        receiveTCPMessage(1); // _
+        byte[] f = receiveTCPMessage(1); // f
+        receiveTCPMessage(1); // _
+        byte[] ip = receiveTCPMessage(15); // ip
+        receiveTCPMessage(1); // _
+        byte[] port = receiveTCPMessage(4); // port
+        receiveTCPMessage(3); // ***
+        String newIp=new String(ip);
+        for(int i=0;i<newIp.length();i++)
+        {
+            if(newIp.charAt(i)=='#')
+            {
+                newIp=newIp.substring(0,i);
+                break;
+            }
+        }
+        tmp[0]=newIp;
+        tmp[1] = new String(port);
+        System.out.println("Bienvenue dans la partie " + (int) m[0] + " qui a pour hauteur " + 
+            (int) ((h[0] & 0xff) + (h[1] & 0xff) * 0x100) + " cases pour largeur " + 
+            (int) ((w[0] & 0xff) + (w[1] & 0xff) * 0x100) + " cases ainsi que "+ 
+            (int) f[0] + " fantômes et dont l'ip est " + new String(ip) + " et le port est " + 
+            new String(port));
+        return tmp;
     }
 }

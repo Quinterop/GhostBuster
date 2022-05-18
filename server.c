@@ -546,7 +546,7 @@ void mall(Player* info_joueur)
 
 void send_mess(Player* info_joueur) // [SEND?_id_mess***]
 {
-    char buffer[3], id[9], mess[200];
+    char buffer[3], id[9], mess[201];
     int read_size;
 
     // Réception de la requête [SEND?_id_mess***]
@@ -556,7 +556,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     read_size = read(info_joueur -> sock_tcp, mess, 203); // mess***
     mess[read_size - 3] = '\0';
     id[8] = '\0';
-
+    printf("Requête reçue (id = \"%s\", mess = \"%s\").\n", id, mess);
     // Envoi du message [SEND?_id2_mess+++]
     char messp[218] = "SEND? id2..... "; 
     for(uint8_t i = 0; i < 255; i++)
@@ -575,7 +575,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
             
             // Envoi du message [SEND!***]
             char send2[8] = "SEND!***";
-            if(write(info_joueur -> sock_tcp, send2, 8) == -1)
+            if(sendto(info_joueur -> sock_udp, send2, 8, 0,info_joueur -> saddr,(socklen_t)sizeof(struct sockaddr_in)) == -1)
             {
                 perror("Erreur lors de l'envoi du message [SEND!***].\n");
                 return;
