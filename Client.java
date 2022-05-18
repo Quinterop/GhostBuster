@@ -30,24 +30,14 @@ public class Client {
         
         System.out.println("AVANT PARTIE");
         System.out.println("AFFICHAGE DES PARTIES");
-<<<<<<< HEAD
-
-        byte[] first = receiveTCPMessage(10);
-=======
         
-        char[] first = recieveTCPMessage(10);
->>>>>>> 6fc2e39c03f9824ed74e63028319fd6ae132a2b9
+        byte[] first = receiveTCPMessage(10);
         int nbgames = first[6];
         System.out.println("nbgames"+nbgames);
         
         for (int i = 0; i < nbgames; i++) {
-<<<<<<< HEAD
-
-            byte[] gamei = receiveTCPMessage(12);
-=======
             
-            char[] gamei = recieveTCPMessage(12);
->>>>>>> 6fc2e39c03f9824ed74e63028319fd6ae132a2b9
+            byte[] gamei = receiveTCPMessage(12);
             System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
         }
         System.out.println("1 : creer une partie");
@@ -56,7 +46,6 @@ public class Client {
         
         switch (choice){
             case 1:
-<<<<<<< HEAD
                 System.out.println("creation partie");
                 
                 
@@ -93,44 +82,6 @@ public class Client {
                 }else{
                     System.out.println("enregistré dans la partie"+reg2[6]);
                 }
-=======
-            System.out.println("creation partie");
-            
-            
-            String mess = "NEWPL " + pseudo + " " + portUdp + "***";
-            sendTCPMessage(mess);
-            System.out.println("Message envoyé : " + mess);
-            
-            char[] reg = (recieveTCPMessage(10));
-            if(reg[3]=='N'){
-                System.out.println("echec creer partie");
-            }else{
-                System.out.println("partie créee "+reg[6]);
-            }
-            break;
-            case 2:
-            System.out.println("incription a une partie");
-            //sc.nextLine();
-            System.out.println("choisir partie");
-            // int numeropartie = sc.nextInt(); //mettre sur 1 octet
-            Byte a = 1;
-            int numeropartie = a & 0xFF;
-            String message = ("REGIS "+pseudo+" "+portUdp+" "+"X"+"***");
-            byte[] messageByte = message.getBytes();
-            
-            
-            
-            
-            messageByte[20] = (byte) numeropartie;
-            sendTCPMessage(messageByte);
-            
-            char[] reg2 = (recieveTCPMessage(10));
-            if(reg2[3]=='N'){
-                System.out.println("echec rejoindre partie");
-            }else{
-                System.out.println("enregistré dans la partie"+reg2[6]);
-            }
->>>>>>> 6fc2e39c03f9824ed74e63028319fd6ae132a2b9
             break;
         }
         pregame();
@@ -164,7 +115,6 @@ public class Client {
                 pregame();
                 break;
             case 5:
-<<<<<<< HEAD
                 System.out.print("Sélectionnez le numéro de la partie : ");
                 int user_m = sc.nextInt();
                 sendTCPMessage("SIZE? " + (char) user_m + "***");
@@ -176,27 +126,6 @@ public class Client {
                     pregame();
                 }
                 else if(!requete.equals("SIZE! "))
-=======
-            System.out.println("taille du laby d'une partie");
-            System.out.println("quelle partie");
-            int numero = sc.nextInt();
-            sendTCPMessage("SIZE? "+numero+"***");
-            /* String test;
-            try {
-                test = reqTCP();
-                System.out.println(test);
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            */
-            char[] prem2 = (recieveTCPMessage(1));
-            if(prem2[0]=='D'){
-                System.out.println("D"+new String(recieveTCPMessage(8)));
-            }else{
-                char[] ok = recieveTCPMessage(15);
-                for(int i = 0; i < ok.length; i++)
->>>>>>> 6fc2e39c03f9824ed74e63028319fd6ae132a2b9
                 {
                     System.out.println("Requête reçue inattendue.");
                     pregame();
@@ -224,11 +153,11 @@ public class Client {
             case 7:
             System.out.println("liste des parties nn vides");
             sendTCPMessage("GAME?***");
-            /*String first = recieveTCPMessage();
+            /*String first = receiveTCPMessage();
             int nbgames = Integer.valueOf(first);
             System.out.println(first);
             for (int i = 0; i < nbgames; i++) {
-                System.out.println(recieveTCPMessage());
+                System.out.println(receiveTCPMessage());
             }
             */ pregame();
             break;
@@ -237,11 +166,13 @@ public class Client {
             sendTCPMessage("START***");
             
             //[WELCO␣m␣h␣w␣f␣ip␣port***]
-            char[] start = recieveTCPMessage(24);
+            byte[] start = receiveTCPMessage(24);
             String mess = new String(start);
             System.out.println(new String(mess));
             int partie = start[6];
             //LIRE HAUTEUR LARGEUR
+            int hauteur = (int) ((start[8] & 0xff) + (start[9] & 0xff) * 0x100);
+            int largeur = (int) ((start[11] & 0xff) + (start[12] & 0xff) * 0x100);
             int nbFant = start[14]; //A TESTER
             String ip = mess.substring(13,28);
             String port = mess.substring(29,33);
@@ -257,7 +188,7 @@ public class Client {
     
     public static void inGame(){
         //POSIT␣id␣x␣y***
-        char[] pos = recieveTCPMessage(25);
+        byte[] pos = receiveTCPMessage(25);
         String mess = new String(pos);
         System.out.println(mess);
         String id = mess.substring(6,14);
@@ -285,9 +216,9 @@ public class Client {
                 sendTCPMessage(out);
                 
                 //MOVEF␣x␣y␣p***
-                char[] prem = recieveTCPMessage(5);
+                byte[] prem = receiveTCPMessage(5);
                 if(prem[4]=='E'){
-                    char[] suite = recieveTCPMessage(3);
+                    byte[] suite = receiveTCPMessage(3);
                     String full = new String(prem)+new String(suite);
                     System.out.println(full);
                     System.out.println("partie terminée");
@@ -295,7 +226,7 @@ public class Client {
                 }
                 else if(prem[4]=='F'){
                     System.out.println("fantome attrapé");
-                    char[] suite = recieveTCPMessage(15);
+                    byte[] suite = receiveTCPMessage(15);
                     String full = new String(prem)+new String(suite);
                     
                     int x2 = Integer.valueOf(full.substring(6,9));
@@ -306,7 +237,7 @@ public class Client {
                     
                 }else {
                     //MOVE!␣x␣y***
-                    char[] suite = recieveTCPMessage(11);
+                    byte[] suite = receiveTCPMessage(11);
                     String full = new String(prem)+new String(suite);
                     int x2 = Integer.valueOf(full.substring(6,9));
                     int y2 = Integer.valueOf(full.substring(10,13));
@@ -321,10 +252,10 @@ public class Client {
                 sendTCPMessage(out);
                 
                 //MOVEF␣x␣y␣p***
-                char[] prem = recieveTCPMessage(5);
+                byte[] prem = receiveTCPMessage(5);
 
                 if(prem[4]=='E'){
-                    char[] suite = recieveTCPMessage(3);
+                    byte[] suite = receiveTCPMessage(3);
                     String full = new String(prem)+new String(suite);
                     System.out.println(full);
                     System.out.println("partie terminée");
@@ -332,7 +263,7 @@ public class Client {
                 }
                 else if(prem[4]=='F'){
                     System.out.println("fantome attrapé");
-                    char[] suite = recieveTCPMessage(15);
+                    byte[] suite = receiveTCPMessage(15);
                     String full = new String(prem)+new String(suite);
                     
                     int x2 = Integer.valueOf(full.substring(6,9));
@@ -343,7 +274,7 @@ public class Client {
                     
                 }else {
                     //MOVE!␣x␣y***
-                    char[] suite = recieveTCPMessage(11);
+                    byte[] suite = receiveTCPMessage(11);
                     String full = new String(prem)+new String(suite);
                     int x2 = Integer.valueOf(full.substring(6,9));
                     int y2 = Integer.valueOf(full.substring(10,13));
@@ -358,10 +289,10 @@ public class Client {
                 sendTCPMessage(out);
                 
                 //MOVEF␣x␣y␣p***
-                char[] prem = recieveTCPMessage(5);
+                byte[] prem = receiveTCPMessage(5);
 
                 if(prem[4]=='E'){
-                    char[] suite = recieveTCPMessage(3);
+                    byte[] suite = receiveTCPMessage(3);
                     String full = new String(prem)+new String(suite);
                     System.out.println(full);
                     System.out.println("partie terminée");
@@ -369,7 +300,7 @@ public class Client {
                 }
                 else if(prem[4]=='F'){
                     System.out.println("fantome attrapé");
-                    char[] suite = recieveTCPMessage(15);
+                    byte[] suite = receiveTCPMessage(15);
                     String full = new String(prem)+new String(suite);
                     
                     int x2 = Integer.valueOf(full.substring(6,9));
@@ -380,7 +311,7 @@ public class Client {
                     
                 }else {
                     //MOVE!␣x␣y***
-                    char[] suite = recieveTCPMessage(11);
+                    byte[] suite = receiveTCPMessage(11);
                     String full = new String(prem)+new String(suite);
                     int x2 = Integer.valueOf(full.substring(6,9));
                     int y2 = Integer.valueOf(full.substring(10,13));
@@ -395,9 +326,9 @@ public class Client {
                 sendTCPMessage(out);
                 
                 //MOVEF␣x␣y␣p***
-                char[] prem = recieveTCPMessage(5);
+                byte[] prem = receiveTCPMessage(5);
                 if(prem[4]=='E'){
-                    char[] suite = recieveTCPMessage(3);
+                    byte[] suite = receiveTCPMessage(3);
                     String full = new String(prem)+new String(suite);
                     System.out.println(full);
                     System.out.println("partie terminée");
@@ -405,7 +336,7 @@ public class Client {
                 }
                 else if(prem[4]=='F'){
                     System.out.println("fantome attrapé");
-                    char[] suite = recieveTCPMessage(15);
+                    byte[] suite = receiveTCPMessage(15);
                     String full = new String(prem)+new String(suite);
                     
                     int x2 = Integer.valueOf(full.substring(6,9));
@@ -416,7 +347,7 @@ public class Client {
                     
                 }else {
                     //MOVE!␣x␣y***
-                    char[] suite = recieveTCPMessage(11);
+                    byte[] suite = receiveTCPMessage(11);
                     String full = new String(prem)+new String(suite);
                     int x2 = Integer.valueOf(full.substring(6,9));
                     int y2 = Integer.valueOf(full.substring(10,13));
@@ -430,14 +361,14 @@ public class Client {
             case 5:{
                 System.out.println("quitter partie");
                 sendTCPMessage("IQUIT***");
-                char[] prem = recieveTCPMessage(8);
+                byte[] prem = receiveTCPMessage(8);
                 System.out.println(new String(prem));
                 return;
             }
             case 6:{
                 System.out.println("liste des joueurs");
                 sendTCPMessage("GLIS?***");
-                char[] first = recieveTCPMessage(10);
+                byte[] first = receiveTCPMessage(10);
 
                 if(first[4]=='E'){
                     System.out.println(first);
@@ -450,7 +381,7 @@ public class Client {
                 
                 for (int i = 0; i < nbplayers; i++) {
                     //GPLYR␣id␣x␣y␣p***
-                    char[] player = recieveTCPMessage(29);
+                    byte[] player = receiveTCPMessage(29);
                     String mess2 = new String(player);
                     String id2 = mess2.substring(6,14);
                     int x2 = Integer.valueOf(mess2.substring(15,18));
@@ -512,38 +443,8 @@ public class Client {
         }
     }
     
-<<<<<<< HEAD
        //recieve tcp message
     public static byte[] receiveTCPMessage(int size) {
-        /* try 
-        {
-            char[] buffer = new char[size];
-            System.out.println("Nombre de caractères lus : " + in.read(buffer, 0, size));
-
-            for(int i = 0; i < size; i++) System.out.println("'" + buffer[i] + "' (" + (int) buffer[i] + ")");
-                
-=======
-    //recieve tcp message
-    public static char[] recieveTCPMessage(int size) {
-        try {
-            //read from the input stream
-            char[] buffer = new char[size];
-            System.out.println("caracteres lus" + in.read(buffer,0,size));
-            
-            for(int i = 0; i < size; i++) System.out.print(buffer[i]);
-            
-            //convert the buffer to a string
-            // String line = new String(buffer);
-            // Return the line
-            //return line;
->>>>>>> 6fc2e39c03f9824ed74e63028319fd6ae132a2b9
-            return buffer;
-        } 
-        catch (IOException e) 
-        {     
-            System.err.println("Could not read from the input stream.");
-            return new char[]{};
-        } */
         byte[] data=new byte[size];
         try{
             socket.getInputStream().read(data);
