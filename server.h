@@ -26,15 +26,15 @@ typedef struct Player
     int sock_tcp; // sock du joueur
     int sock_udp; // sock udp du joueur
     struct sockaddr* saddr;
-    uint8_t etat; // 0 -> inscrit dans aucune partie, 1 -> inscrit dans une partie mais non lancée, 2 -> en train de jouer
+    uint8_t etat; // 0 -> inscrit dans aucune partie, 1 -> inscrit dans une partie mais non lancée, 2 -> en attente du lancement de partie 3 -> en train de jouer
     uint8_t i; // index dans les tableaux de lobby
     uint8_t m; // partie à laquelle le joueur est inscrit
 } Player;
 
 struct lobby
 {
-    char ip[16]; // adresse IP de multi-diffusion
-    char port[5]; // port de multi-diffusion
+    char *ip; // adresse IP de multi-diffusion
+    char *port; // port de multi-diffusion
     int sock; // socket de multi-diffusion
     Player* joueurs[255]; // tableau des joueurs
     struct sockaddr* saddr;

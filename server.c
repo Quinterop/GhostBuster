@@ -43,6 +43,7 @@ void* avant_partie(void* sock2)
             read(info_joueur -> sock_tcp, buffer, 3); // ***
             if(info_joueur -> etat == 1)
             {
+                info_joueur -> etat = 2;
                 break;
             }
         }
@@ -125,16 +126,20 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     {
         read(info_joueur -> sock_tcp, buffer, 1); // _
         read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
-
+        printf("MMMMMMMMMMMM: %u\n",info_joueur -> m);
+        printf("AAAAAAAAAAAA: %u\n",parties[info_joueur -> m].etat);
+        info_joueur->m=0;
+        parties[0].etat=1;
         // Vérification de l'existence de la partie cherchée à être rejoindre 
-        if(parties[info_joueur -> m].etat != 1)
+        /*if(parties[info_joueur -> m].etat != 1)
         {
             regno(info_joueur);
             return;
-        }
+        }*/
     }
     else // Réception spécifique à [NEWPL_id_port***]
     {
+        printf("bonjour ZZZZZZZZZZZZZZZZ");
         for(i = 0; parties[i].etat != 0; i++){}
         info_joueur -> m = i;
     }
@@ -164,8 +169,9 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
 
     // Création du socket UDP du joueur
     int sock_udp;
-    struct sockaddr_in address_sock;
-    struct addrinfo *first_info, hints;
+    //struct sockaddr_in address_sock;
+    struct addrinfo *first_info;
+    struct addrinfo hints;
     memset(&hints, 0, sizeof(struct addrinfo));
     sock_udp = socket(PF_INET, SOCK_DGRAM, 0);
     if(sock_udp == -1)
@@ -175,26 +181,38 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
         regno(info_joueur);
         return;
     }
-    address_sock.sin_family = AF_INET;
-    address_sock.sin_port = htons(atoi(info_joueur -> port));
-    address_sock.sin_addr.s_addr = htonl(INADDR_ANY);
-    getaddrinfo("localhost", info_joueur -> port, &hints, &first_info);
-    if(bind(sock_udp, (struct sockaddr *) &address_sock, sizeof(struct sockaddr_in)) == -1)
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    
+    //address_sock.sin_family = AF_INET;
+    //address_sock.sin_port = htons(atoi(info_joueur -> port));
+    //address_sock.sin_addr.s_addr = htonl(INADDR_ANY);
+    
+    int r=getaddrinfo("localhost", info_joueur -> port, &hints, &first_info);
+    if(r!=0)
     {
         // Envoi du message [REGNO***]
+        printf("Erreur lors du bind de la socket UDP du joueur.\n");
+        regno(info_joueur);
+        return;
+    }
+    if(first_info==NULL)
+    {
+        // Envoi du message [REGNO***]
+        printf("Erreur lors du bind de la socket UDP du joueur.\n");
         regno(info_joueur);
         return;
     }
     info_joueur -> sock_udp = sock_udp;
     info_joueur -> saddr = first_info -> ai_addr;
     printf("Socket UDP créée.\n");
-
+    
     // Attribution du joueur dans la liste de joueurs de la partie
-    for(j = 0; parties[i].joueurs[j] != NULL; j++){}
-    parties[i].joueurs[j] = info_joueur;
+    for(j = 0; parties[info_joueur->m].joueurs[j] != NULL; j++){}
+    parties[info_joueur->m].joueurs[j] = info_joueur;
 
     // Attribution des valeurs par défaut s'il s'agit d'une nouvelle partie
-    if(parties[i].etat == 0)
+    if(parties[info_joueur->m].etat == 0)
     {
         char ip[16] = "###############";
         char port_multicast[5];
@@ -205,24 +223,31 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
         hints_multicast.ai_socktype = SOCK_DGRAM;
         do
         {
-            sprintf(ip, "239.255.255.%u", i);
-            sprintf(port_multicast, "%d", i + 6000);
+            //sprintf(ip, "224.120.100.%u", i);
+            sprintf(ip, "224.4.5.6");
+            sprintf(port_multicast, "%d", info_joueur->m + 6000);
             printf("Test de la disponibilité de l'adresse IP multicast \"%s\" avec le port %s...\n", ip, port_multicast);
         } while(getaddrinfo(ip, port_multicast, &hints_multicast, &first_info_multicast) != 0);
         printf("Test réussi.\n");
         
         n++;
-        strcpy(parties[i].ip, ip);
-        strcpy(parties[i].port, port_multicast);
-        parties[i].saddr = first_info -> ai_addr;
-        parties[i].etat = 1;
-        parties[i].f = FANTOMES_DEFAUT;
-        parties[i].l = LARGEUR_DEFAUT;
-        parties[i].h = HAUTEUR_DEFAUT;
+        strcpy(parties[info_joueur->m].ip, ip);
+        strcpy(parties[info_joueur->m].port, port_multicast);
+        parties[info_joueur->m].saddr = first_info -> ai_addr;
+        parties[info_joueur->m].etat = 1;
+        printf("Etat de la partie %u: %u\n",info_joueur->m, parties[i].etat);
+        //parties[i].f = FANTOMES_DEFAUT;
+        //parties[i].l = LARGEUR_DEFAUT;
+        //parties[i].h = HAUTEUR_DEFAUT;
     }
-
     info_joueur -> etat = 1;
-    parties[i].s += 1;
+    pthread_mutex_lock(&verrou);
+    parties[info_joueur->m].s += 1;
+    pthread_mutex_unlock(&verrou);
+
+    printf("i=%d\n", i);
+
+    printf("Nombre de joueurs dans la partie %u: %u\n",info_joueur->m, parties[info_joueur->m].s);
 
     // Envoi du message [REGOK_m***]
     char regok[10] = "REGOK m***";
@@ -558,24 +583,26 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     id[8] = '\0';
     printf("Requête reçue (id = \"%s\", mess = \"%s\").\n", id, mess);
     // Envoi du message [SEND?_id2_mess+++]
-    char messp[218] = "SEND? id2..... "; 
-    for(uint8_t i = 0; i < 255; i++)
+    char messp[219]; 
+    sprintf(messp, "SEND? %s %s+++", info_joueur->id,mess);
+    for(uint8_t i = 0; i < parties[info_joueur->m].s; i++)
     {
+        printf("id joueurs = %s\n", parties[info_joueur -> m].joueurs[i] -> id);
         if(parties[info_joueur -> m].joueurs[i] != NULL && strcmp(parties[info_joueur -> m].joueurs[i] -> id, id) == 0)
         {
-            memcpy(messp + 6, info_joueur -> id, strlen(info_joueur -> id));
-            strcat(mess, "+++");
-            memcpy(messp + 15, mess, strlen(mess));
+            printf("id message = %s\n", id);
+            printf("PARTIE: sock udp = %s adresse ip = %s\n", parties[info_joueur -> m].port,parties[info_joueur -> m].ip);
+            printf("JOUEURS: sock udp = %s\n", parties[info_joueur -> m].joueurs[i] -> port);
             if(sendto(parties[info_joueur -> m].joueurs[i] -> sock_udp, messp, strlen(messp), 0, parties[info_joueur -> m].joueurs[i] -> saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
             {
                 perror("Erreur lors de l'envoi en multicast du message [SEND?_id2_mess+++].\n");
                 return;
             }
-            printf("Message [SEND?_id2_mess+++] envoyés en multicast (id2 = %s, mess = %s).\n", info_joueur -> id, mess);
+            printf("Message envoyé: %s\n",messp);
             
             // Envoi du message [SEND!***]
             char send2[8] = "SEND!***";
-            if(sendto(info_joueur -> sock_udp, send2, 8, 0,info_joueur -> saddr,(socklen_t)sizeof(struct sockaddr_in)) == -1)
+            if(send(info_joueur -> sock_tcp, send2, 8, 0) == -1)
             {
                 perror("Erreur lors de l'envoi du message [SEND!***].\n");
                 return;
@@ -600,7 +627,7 @@ int is_lobby_ready(uint8_t m)
     int a = 0;
     for(int i = 0; i < 255; i++)
     {
-        if(parties[m].joueurs[i] != NULL && parties[m].joueurs[i] -> etat == 1)
+        if(parties[m].joueurs[i] != NULL && parties[m].joueurs[i] -> etat == 2)
         {
             a++;
         }
@@ -623,8 +650,34 @@ void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
     printf("Le nombre %u est devenu %s.\n", nombre, dest);
 }
 
+
+void initializeGame(){
+    for(int i=0;i<255;i++){
+        parties[i].ip=malloc(sizeof(char)*16);
+        
+        parties[i].port=malloc(sizeof(char)*5);
+        if(parties[i].ip==NULL || parties[i].port==NULL){
+            perror("Erreur lors de l'allocation de la mémoire.\n");
+            exit(EXIT_FAILURE);
+        }
+        parties[i].sock=0; 
+        parties[i].saddr=NULL;
+        parties[i].etat=0;
+        parties[i].f=0;
+        parties[i].s=0;
+        parties[i].l=LARGEUR_DEFAUT;
+        parties[i].h=HAUTEUR_DEFAUT; 
+        for(int j=0;j<255;j++){
+            parties[i].joueurs[j]=NULL;
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
+
+    initializeGame();
+
     // Déclaration des variables
     int port, sock, sock2, size;
     struct sockaddr_in sockaddress, caller;

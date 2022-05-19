@@ -16,7 +16,7 @@ public class Client {
     private static DataOutputStream outB;
     private static int port;
     private static int maxReadUDP = 50;
-    private static String portUdp = "5656";
+    private static String portUdp;
     private static Scanner sc = new Scanner(System.in);
     private static Communication communication;
     
@@ -44,9 +44,11 @@ public class Client {
         System.out.println("1 : creer une partie");
         System.out.println("2 : rejoindre une partie");
         int choice = sc.nextInt();
-        
+        sc.nextLine();
         switch (choice){
             case 1:
+                System.out.println("Veuillez entrer un port UDP");
+                portUdp = sc.nextLine();
                 System.out.println("creation partie");
                 
                 
@@ -62,20 +64,20 @@ public class Client {
                 }
             break;
             case 2:
+                System.out.println("Veuillez entrer un port UDP");
+                portUdp = sc.nextLine();
                 System.out.println("incription a une partie");
-                //sc.nextLine();
                 System.out.println("choisir partie");
-               // int numeropartie = sc.nextInt(); //mettre sur 1 octet
-                Byte a = 1;
-                int numeropartie = a & 0xFF;
-                String message = ("REGIS "+pseudo+" "+portUdp+" "+"X"+"***");
-                byte[] messageByte = message.getBytes();
+                int n = sc.nextInt(); //mettre sur 1 octet
+                //int numeropartie = n & 0xFF;
+                String message = ("REGIS "+pseudo+" "+portUdp+" "+n+"***");
+                //byte[] messageByte = message.getBytes();
 
 
                 
 
-                messageByte[20] = (byte) numeropartie;
-                sendTCPMessage(messageByte);
+                //messageByte[20] = (byte) numeropartie;
+                sendTCPMessage(message);
 
                 byte[] reg2 = (receiveTCPMessage(10));
                 if(reg2[3]=='N'){
@@ -180,8 +182,10 @@ public class Client {
             int port=Integer.parseInt(portString);*/
             String[] start=welc();
             String ip=start[0];
+            System.out.println("adresse multicast: "+ip);
             int port=Integer.parseInt(start[1]);
-            communication=new Communication(ip,port);
+            System.out.println("port multicast: "+port);
+            communication=new Communication("localhost",Integer.parseInt(portUdp));
             Thread t = new Thread(communication);
             t.start();
             //inGame();
