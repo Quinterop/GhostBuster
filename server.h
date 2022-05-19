@@ -18,11 +18,11 @@
 
 typedef struct Player
 {
-    char id[9]; // id du joueur
-    char port[5]; // port UDP du joueur
-    char p[4]; // nombre de points du joueur
-    char x[4]; // coordonnée x où se trouve le joueur dans le labyrinthe
-    char y[4]; // coordonnée y où se trouve le joueur dans le labyrinthe
+    signed char id[9]; // id du joueur
+    signed char port[5]; // port UDP du joueur
+    signed char p[4]; // nombre de points du joueur
+    signed char x[4]; // coordonnée x où se trouve le joueur dans le labyrinthe
+    signed char y[4]; // coordonnée y où se trouve le joueur dans le labyrinthe
     int sock_tcp; // sock du joueur
     int sock_udp; // sock udp du joueur
     struct sockaddr* saddr;
@@ -33,8 +33,8 @@ typedef struct Player
 
 struct lobby
 {
-    char ip[16]; // adresse IP de multi-diffusion
-    char port[5]; // port de multi-diffusion
+    signed char ip[16]; // adresse IP de multi-diffusion
+    signed char port[5]; // port de multi-diffusion
     int sock; // socket de multi-diffusion
     Player* joueurs[255]; // tableau des joueurs
     struct sockaddr* saddr;
@@ -62,4 +62,4 @@ void mall(Player* info_joueur);
 void send_mess(Player* info_joueur);
 
 int is_lobby_ready(uint8_t m);
-void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
+void uint16_to_len_str(signed char* dest, uint16_t nombre, uint8_t n);

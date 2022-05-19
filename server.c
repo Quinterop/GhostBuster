@@ -12,7 +12,7 @@ void* avant_partie(void* sock2)
     info_joueur -> etat = 0;
 
     int read_size;
-    char buffer[3], message[6];
+    signed char buffer[3], message[6];
 
     // Envoi du message [GAMES_n***] et [OGAME_m_s***]
     games(info_joueur);
@@ -85,7 +85,7 @@ void* avant_partie(void* sock2)
 void games(Player* info_joueur)
 {
     // Envoi du message [GAMES_n***]
-    char games[10] = "GAMES n***";
+    signed char games[10] = "GAMES n***";
     memcpy(games + 6, &n, sizeof(uint8_t));
     if(write(info_joueur -> sock_tcp, games, 10) == -1)
     {
@@ -95,7 +95,7 @@ void games(Player* info_joueur)
     printf("Message [GAMES_n***] envoyé au joueur (n = %d).\n", n);
 
     // Envoi du/des message(s) [OGAME_m_s***]
-    char ogame[12] = "OGAME m s***";
+    signed char ogame[12] = "OGAME m s***";
     for(uint8_t i = 0; i < 255; i++)
     {
         if(parties[i].etat == 1)
@@ -113,7 +113,7 @@ void games(Player* info_joueur)
 
 void newpl_regis(Player* info_joueur, uint8_t is_regis)
 {
-    char buffer[3];
+    signed char buffer[3];
     uint8_t i, j; // index de la partie et du joueur
     
     // Réception des requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
@@ -196,8 +196,8 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     // Attribution des valeurs par défaut s'il s'agit d'une nouvelle partie
     if(parties[i].etat == 0)
     {
-        char ip[16] = "###############";
-        char port_multicast[5];
+        signed char ip[16] = "###############";
+        signed char port_multicast[5];
         struct addrinfo *first_info_multicast, hints_multicast;
         memset(&hints_multicast, 0, sizeof(struct addrinfo));
         parties[i].sock = socket(PF_INET, SOCK_DGRAM, 0);
@@ -225,7 +225,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     parties[i].s += 1;
 
     // Envoi du message [REGOK_m***]
-    char regok[10] = "REGOK m***";
+    signed char regok[10] = "REGOK m***";
     memcpy(regok + 6, &info_joueur -> m, sizeof(uint8_t)); // m
     if(write(info_joueur -> sock_tcp, regok, 10) == -1)
     {
@@ -257,7 +257,7 @@ void unreg(Player* info_joueur)
     }
 
     // Envoi du message [UNROK_m***]
-    char unrok[10] = "UNROK m***";
+    signed char unrok[10] = "UNROK m***";
     memcpy(unrok + 6, &info_joueur -> m, sizeof(uint8_t));
     if(write(info_joueur -> sock_tcp, unrok, 10) == -1)
     {
@@ -269,7 +269,7 @@ void unreg(Player* info_joueur)
 
 void size(Player* info_joueur)
 {
-    char buffer[3];
+    signed char buffer[3];
 
     // Réception de la requête [SIZE?_m***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
@@ -285,10 +285,12 @@ void size(Player* info_joueur)
     }
 
     // Envoi du message [SIZE!_m_h_w***]
-    char size[16] = "SIZE! m h. w.***";
+    signed char size[16] = "SIZE! m h. w.***";
+    uint16_t hauteur = htole16(parties[info_joueur -> m].h);
+    uint16_t largeur = htole16(parties[info_joueur -> m].l);
     memcpy(size + 6, &info_joueur -> m, sizeof(uint8_t));
-    memcpy(size + 8, &parties[info_joueur -> m].h, sizeof(uint16_t));
-    memcpy(size + 11, &parties[info_joueur -> m].l, sizeof(uint16_t));
+    memcpy(size + 8, &hauteur, sizeof(uint16_t));
+    memcpy(size + 11, &largeur, sizeof(uint16_t));
     if(write(info_joueur -> sock_tcp, size, 16) == -1)
     {
         perror("Erreur lors de l'envoi du message [SIZE!_m_h_w***].\n");
@@ -299,7 +301,7 @@ void size(Player* info_joueur)
 
 void list(Player* info_joueur)
 {
-    char buffer[3];
+    signed char buffer[3];
 
     // Réception de la requête [LIST?_m***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
@@ -315,7 +317,7 @@ void list(Player* info_joueur)
     }
 
     // Envoi du message [LIST!_m_s***] 
-    char list[12] = "LIST! m s***";
+    signed char list[12] = "LIST! m s***";
     memcpy(list + strlen("LIST! "), &info_joueur -> m, sizeof(uint8_t));
     memcpy(list + strlen("LIST! "), &parties[info_joueur -> m].s, sizeof(uint8_t));
     if(write(info_joueur -> sock_tcp, list, 12) == -1)
@@ -329,7 +331,7 @@ void list(Player* info_joueur)
     {
         if(parties[info_joueur -> m].joueurs[i] != NULL)
         {
-            char playr[17] = "PLAYR id......***";
+            signed char playr[17] = "PLAYR id......***";
             memcpy(playr + strlen("PLAYR "), parties[info_joueur -> m].joueurs[i] -> id, 8);
             if(write(info_joueur -> sock_tcp, playr, 17) == -1)
             {
@@ -343,7 +345,7 @@ void list(Player* info_joueur)
 void welco(Player* info_joueur)
 {
     // Envoi du message [WELCO_m_h_w_f_ip_port***]
-    char welco[39] = "WELCO m h. w. f ip############# port***";
+    signed char welco[39] = "WELCO m h. w. f ip############# port***";
     memcpy(welco + 6, &info_joueur -> m, sizeof(uint8_t));
     memcpy(welco + 8, &parties[info_joueur -> m].h, sizeof(uint16_t));
     memcpy(welco + 11, &parties[info_joueur -> m].l, sizeof(uint16_t));
@@ -358,14 +360,14 @@ void welco(Player* info_joueur)
     printf("Message [WELCO_m_h_w_f_ip_port***] envoyé au joueur (m = %u, h = %u, w = %u, f = %u, ip = %s, port = %s).\n", info_joueur -> m, parties[info_joueur -> m].h, parties[info_joueur -> m].l, parties[info_joueur -> m].f, parties[info_joueur -> m].ip, parties[info_joueur -> m].port);
 
     // Définition de la position x et y de départ du joueur dans le labyrinthe
-    char x[4], y[4];
+    signed char x[4], y[4];
     uint16_to_len_str(x, rand() % parties[info_joueur -> m].l, 3);
     uint16_to_len_str(y, rand() % parties[info_joueur -> m].h, 3);
     strcpy(info_joueur -> x, x);
     strcpy(info_joueur -> y, y);
 
     // Envoi du message [POSIT_id_x_y***] 
-    char posit[25] = "POSIT id...... x.. y..***"; 
+    signed char posit[25] = "POSIT id...... x.. y..***"; 
     memcpy(posit + 6, info_joueur -> id, strlen(info_joueur -> id));
     memcpy(posit + 15, x, strlen(x));
     memcpy(posit + 19, y, strlen(y));
@@ -380,7 +382,7 @@ void welco(Player* info_joueur)
 void regno(Player* info_joueur) 
 {
     // Envoi du message [REGNO***]
-    char regno[8] = "REGNO***";
+    signed char regno[8] = "REGNO***";
     if(write(info_joueur -> sock_tcp, regno, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [REGNO***].\n");
@@ -392,7 +394,7 @@ void regno(Player* info_joueur)
 void dunno(Player* info_joueur)
 {
     // Envoi du message [DUNNO***]
-    char dunno[8] = "DUNNO***";
+    signed char dunno[8] = "DUNNO***";
     if(write(info_joueur -> sock_tcp, dunno, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [DUNNO***].\n");
@@ -405,7 +407,7 @@ void partie_en_cours(Player* info_joueur)
 {
     parties[info_joueur -> m].etat = 2;
 
-    char buffer[3], message[6];
+    signed char buffer[3], message[6];
     int read_size;
     
     while(1)
@@ -465,7 +467,7 @@ void partie_en_cours(Player* info_joueur)
 void gobye(Player* info_joueur)
 {
     // Envoi du message [GOBYE***]
-    char gobye[8] = "GOBYE***";
+    signed char gobye[8] = "GOBYE***";
     if(write(info_joueur -> sock_tcp, gobye, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [GOBYE***].\n");
@@ -476,7 +478,7 @@ void gobye(Player* info_joueur)
 void glis(Player* info_joueur)
 {
     // Envoi du message [GLIS!_s***]
-    char glis[10] = "GLIS! s***";
+    signed char glis[10] = "GLIS! s***";
     memcpy(glis + 6, &parties[info_joueur -> m].s, sizeof(uint8_t));
     if(write(info_joueur -> sock_tcp, glis, 10) == -1)
     {
@@ -485,7 +487,7 @@ void glis(Player* info_joueur)
     }
 
     // Envoi du/des message(s) [GPLYR_id_x_y_p***]
-    char gplyr[30] = "GPLYR id...... x.. y.. p...***";
+    signed char gplyr[30] = "GPLYR id...... x.. y.. p...***";
     for(uint8_t i = 0; i < 255; i++)
     {
         if(parties[info_joueur -> m].joueurs[i] != NULL)
@@ -506,7 +508,7 @@ void glis(Player* info_joueur)
 
 void mall(Player* info_joueur)
 {
-    char buffer[3], mess[201];
+    signed char buffer[3], mess[201];
     int read_size;
 
     // Réception du message [MALL?_mess***]
@@ -523,7 +525,7 @@ void mall(Player* info_joueur)
     }
 
     // Envoi du message [MESSA_id_mess+++] en multicast
-    char messa[218] = "MESSA id...... ";
+    signed char messa[218] = "MESSA id...... ";
     memcpy(messa + 6, info_joueur -> id, strlen(info_joueur -> id));
     strcat(mess, "+++");
     memcpy(messa + 15, mess, strlen(mess));
@@ -535,7 +537,7 @@ void mall(Player* info_joueur)
     printf("Message [MESSA_id_mess+++] envoyé en multicast avec succès (id = \"%s\", mess = \"%s\").\n", info_joueur -> id, mess);
    
    // Envoi du message [MALL!***]
-    char mall[8] = "MALL!***"; // [MALL!***]
+    signed char mall[8] = "MALL!***"; // [MALL!***]
     if(write(info_joueur -> sock_tcp, mall, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [MALL!***].\n");
@@ -546,7 +548,7 @@ void mall(Player* info_joueur)
 
 void send_mess(Player* info_joueur) // [SEND?_id_mess***]
 {
-    char buffer[3], id[9], mess[200];
+    signed char buffer[3], id[9], mess[200];
     int read_size;
 
     // Réception de la requête [SEND?_id_mess***]
@@ -558,7 +560,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     id[8] = '\0';
 
     // Envoi du message [SEND?_id2_mess+++]
-    char messp[218] = "SEND? id2..... "; 
+    signed char messp[218] = "SEND? id2..... "; 
     for(uint8_t i = 0; i < 255; i++)
     {
         if(parties[info_joueur -> m].joueurs[i] != NULL && strcmp(parties[info_joueur -> m].joueurs[i] -> id, id) == 0)
@@ -574,7 +576,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
             printf("Message [SEND?_id2_mess+++] envoyé en UDP au joueur %s (id2 = %s, mess = %s).\n", info_joueur -> id, info_joueur -> id, mess);
             
             // Envoi du message [SEND!***]
-            char send2[8] = "SEND!***";
+            signed char send2[8] = "SEND!***";
             if(write(info_joueur -> sock_tcp, send2, 8) == -1)
             {
                 perror("Erreur lors de l'envoi du message [SEND!***].\n");
@@ -586,7 +588,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     }
     
     // Envoi du message [NSEND***]
-    char nsend[8] = "NSEND***";
+    signed char nsend[8] = "NSEND***";
     if(write(info_joueur -> sock_tcp, nsend, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [NSEND***].\n");
@@ -595,7 +597,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     printf("Message [NSEND***] envoyé au joueur.\n");
 }
 
-char** parse_txt(char* filename, int* nb_lines)
+signed char** parse_txt(signed char* filename, int* nb_lines)
 {
     FILE* f = fopen(filename, "r");
     if(f == NULL)
@@ -604,12 +606,12 @@ char** parse_txt(char* filename, int* nb_lines)
         fclose(f);
         exit(1);
     }
-    char** lines = malloc(sizeof(char*) * 255);
+    signed char** lines = malloc(sizeof(signed char*) * 255);
     int i = 0;
-    char* buffer=malloc(sizeof(char) * 255);
+    signed char* buffer=malloc(sizeof(signed char) * 255);
     while(fgets(buffer, 255, f) != NULL)
     {
-        lines[i] = malloc(sizeof(char) * 255);
+        lines[i] = malloc(sizeof(signed char) * 255);
         strcpy(lines[i], buffer);
         i++;
     }
@@ -632,9 +634,9 @@ int is_lobby_ready(uint8_t m)
     return a > 0 && a == parties[m].s;
 }
 
-void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
+void uint16_to_len_str(signed char* dest, uint16_t nombre, uint8_t len)
 {
-    char nombre_string[len];
+    signed char nombre_string[len];
     uint8_t i;
     for(i = 0; i < len; i++)
     {
@@ -646,7 +648,7 @@ void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
     printf("Le nombre %u est devenu %s.\n", nombre, dest);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, signed char* argv[])
 {
     // Déclaration des variables
     int port, sock, sock2, size;
