@@ -1,21 +1,20 @@
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 
-
-
-
-public class Communication implements Runnable{
-
-
+public class CommMulticast implements Runnable{
+    
+    String ip;
     int port;
-    DatagramSocket socket;
+    MulticastSocket socket;
 
 
-    public Communication(int port) {
+    public CommMulticast(String ip,int port) {
         this.port = port;
-        System.out.println("Communication UDP: " + port);
         try {
-            socket = new DatagramSocket(port);
+            socket = new MulticastSocket(port);
+            socket.joinGroup(InetAddress.getByName(ip));
+            System.out.println("Communication Multicast: " + port+" "+InetAddress.getByName(ip));
         } catch (Exception e) {
             System.out.println("mmmmhhh étrange tout ça");
             e.printStackTrace();
@@ -41,4 +40,12 @@ public class Communication implements Runnable{
             System.out.println("Error: " + e.getMessage());
         } 
     }
+
+
+
+
+
+
+
 }
+

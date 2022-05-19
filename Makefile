@@ -1,4 +1,4 @@
-all: server client labyrinthe comm
+all: server client labyrinthe comm multi
 
 server: server.c
 	gcc -pthread -Wall -g server.c -o server
@@ -11,6 +11,9 @@ labyrinthe: labyrinthe.java
 
 comm: Communication.java
 	javac Communication.java
+
+multi: CommMulticast.java
+	javac CommMulticast.java
 
 clean:
 	rm server *.class

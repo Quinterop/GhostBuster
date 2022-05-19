@@ -126,16 +126,13 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     {
         read(info_joueur -> sock_tcp, buffer, 1); // _
         read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
-        printf("MMMMMMMMMMMM: %u\n",info_joueur -> m);
-        printf("AAAAAAAAAAAA: %u\n",parties[info_joueur -> m].etat);
         info_joueur->m=0;
-        parties[0].etat=1;
         // Vérification de l'existence de la partie cherchée à être rejoindre 
-        /*if(parties[info_joueur -> m].etat != 1)
+        if(parties[info_joueur -> m].etat != 1)
         {
             regno(info_joueur);
             return;
-        }*/
+        }
     }
     else // Réception spécifique à [NEWPL_id_port***]
     {
@@ -233,7 +230,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
         n++;
         strcpy(parties[info_joueur->m].ip, ip);
         strcpy(parties[info_joueur->m].port, port_multicast);
-        parties[info_joueur->m].saddr = first_info -> ai_addr;
+        parties[info_joueur->m].saddr = first_info_multicast -> ai_addr;
         parties[info_joueur->m].etat = 1;
         printf("Etat de la partie %u: %u\n",info_joueur->m, parties[i].etat);
         //parties[i].f = FANTOMES_DEFAUT;
@@ -536,7 +533,7 @@ void mall(Player* info_joueur)
 
     // Réception du message [MALL?_mess***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
-    read_size = read(info_joueur -> sock_tcp, mess, 203); // mess***
+    read_size = read(info_joueur -> sock_tcp, mess, 204); // mess***
     mess[read_size - 3] = '\0';
 
     // Vérification que la partie actuelle est toujours en cours
@@ -548,10 +545,9 @@ void mall(Player* info_joueur)
     }
 
     // Envoi du message [MESSA_id_mess+++] en multicast
-    char messa[218] = "MESSA id...... ";
-    memcpy(messa + 6, info_joueur -> id, strlen(info_joueur -> id));
-    strcat(mess, "+++");
-    memcpy(messa + 15, mess, strlen(mess));
+    char messa[219];
+    sprintf(messa, "MESSA %s %s+++",info_joueur->id, mess);
+    printf("%s",messa);
     if(sendto(parties[info_joueur -> m].sock, messa, strlen(messa), 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
     {
         perror("Erreur lors de l'envoi en multicast du message [MESSA_id_mess+++].\n");

@@ -19,6 +19,7 @@ public class Client {
     private static String portUdp;
     private static Scanner sc = new Scanner(System.in);
     private static Communication communication;
+    private static CommMulticast commMulticast;
     
     
     public static void main(String[] args) {
@@ -185,9 +186,12 @@ public class Client {
             System.out.println("adresse multicast: "+ip);
             int port=Integer.parseInt(start[1]);
             System.out.println("port multicast: "+port);
-            communication=new Communication("localhost",Integer.parseInt(portUdp));
+            communication=new Communication(Integer.parseInt(portUdp));
+            commMulticast=new CommMulticast(ip,port);
             Thread t = new Thread(communication);
+            Thread t2 = new Thread(commMulticast);
             t.start();
+            t2.start();
             //inGame();
             enJeu();
             break;
