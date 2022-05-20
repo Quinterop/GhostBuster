@@ -46,6 +46,7 @@ struct lobby
 };
 
 void* avant_partie(void* sock2);
+void avant_partie_aux(Player* info_joueur);
 void games(Player* info_joueur);
 void newpl_regis(Player* info_joueur, uint8_t is_regis);
 void unreg(Player* info_joueur);
@@ -62,4 +63,5 @@ void mall(Player* info_joueur);
 void send_mess(Player* info_joueur);
 
 int is_lobby_ready(uint8_t m);
+void resetGame(uint8_t m);
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);

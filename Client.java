@@ -29,70 +29,13 @@ public class Client {
         /* pseudo = "remedy12";
         port = 7779; */
         connect();
+        launcher();
         
-        System.out.println("AVANT PARTIE");
-        System.out.println("AFFICHAGE DES PARTIES");
-        
-        byte[] first = receiveTCPMessage(10);
-        int nbgames = first[6];
-        System.out.println("nbgames"+nbgames);
-        
-        for (int i = 0; i < nbgames; i++) {
-            
-            byte[] gamei = receiveTCPMessage(12);
-            System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
-        }
-        System.out.println("1 : creer une partie");
-        System.out.println("2 : rejoindre une partie");
-        int choice = sc.nextInt();
-        sc.nextLine();
-        switch (choice){
-            case 1:
-                System.out.println("Veuillez entrer un port UDP");
-                portUdp = sc.nextLine();
-                System.out.println("creation partie");
-                
-                
-                String mess = "NEWPL " + pseudo + " " + portUdp + "***";
-                sendTCPMessage(mess);
-                System.out.println("Message envoyé : " + mess);
 
-                byte[] reg = (receiveTCPMessage(10));
-                if(reg[3]=='N'){
-                    System.out.println("echec creer partie");
-                }else{
-                    System.out.println("partie créee "+reg[6]);
-                }
-            break;
-            case 2:
-                System.out.println("Veuillez entrer un port UDP");
-                portUdp = sc.nextLine();
-                System.out.println("incription a une partie");
-                System.out.println("choisir partie");
-                int n = sc.nextInt(); //mettre sur 1 octet
-                //int numeropartie = n & 0xFF;
-                String message = ("REGIS "+pseudo+" "+portUdp+" "+n+"***");
-                //byte[] messageByte = message.getBytes();
-
-
-                
-
-                //messageByte[20] = (byte) numeropartie;
-                sendTCPMessage(message);
-
-                byte[] reg2 = (receiveTCPMessage(10));
-                if(reg2[3]=='N'){
-                    System.out.println("echec rejoindre partie");
-                }else{
-                    System.out.println("enregistré dans la partie"+reg2[6]);
-                }
-            break;
-        }
-        pregame();
     }
     
     
-    public static void pregame(){
+    /*public static void pregame(){
         System.out.print(
             "Sélectionnez un choix :\n" +
             "4/ Quitter la partie en cours\n" +
@@ -163,7 +106,7 @@ public class Client {
             for (int i = 0; i < nbgames; i++) {
                 System.out.println(receiveTCPMessage());
             }
-            */ pregame();
+             pregame();
             break;
             case 8:
             System.out.println("début de partie");
@@ -180,7 +123,7 @@ public class Client {
             int nbFant = start[14]; //A TESTER
             String ip = mess.substring(13,28);
             String portString = mess.substring(29,33);
-            int port=Integer.parseInt(portString);*/
+            int port=Integer.parseInt(portString);
             String[] start=welc();
             String ip=start[0];
             System.out.println("adresse multicast: "+ip);
@@ -201,7 +144,7 @@ public class Client {
         }
         sc.close();
         //System.out.println("la partie a commencé");
-    }
+    }*/
     
     /*public static void inGame(){
         //POSIT␣id␣x␣y***
@@ -430,10 +373,192 @@ public class Client {
     }*/
     
 
+    public static void launcher(){
+        boolean ok = false;
+        System.out.println("AVANT PARTIE");
+        System.out.println("AFFICHAGE DES PARTIES");
+        
+        byte[] first = receiveTCPMessage(10);
+        int nbgames = first[6];
+        System.out.println("nbgames"+nbgames);
+        
+        for (int i = 0; i < nbgames; i++) {
+            
+            byte[] gamei = receiveTCPMessage(12);
+            System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
+        }
+        while(!ok){
+            try {
+                System.out.println("1 : creer une partie");
+                System.out.println("2 : rejoindre une partie");
+                int choice = sc.nextInt();
+                sc.nextLine();
+                switch (choice){
+                    case 1:
+                        System.out.println("Veuillez entrer un port UDP");
+                        portUdp = sc.nextLine();
+                        if(Integer.parseInt(portUdp)<1024 || Integer.parseInt(portUdp)>8191){
+                            System.out.println("port incorrect");
+                            break;
+                        }
+                        System.out.println("creation partie"); 
+                        String mess = "NEWPL " + pseudo + " " + portUdp + "***";
+                        sendTCPMessage(mess);
+                        System.out.println("Message envoyé : " + mess);
+
+                        byte[] reg = (receiveTCPMessage(10));
+                        if(reg[3]=='N'){
+                            System.out.println("echec creer partie");
+                        }else{
+                            ok=true;
+                            System.out.println("partie créee "+reg[6]);
+                        }
+                    break;
+                    case 2:
+                        System.out.println("Veuillez entrer un port UDP");
+                        portUdp = sc.nextLine();
+                        if(Integer.parseInt(portUdp)<1024 || Integer.parseInt(portUdp)>8191){
+                            System.out.println("port incorrect");
+                            break;
+                        }
+                        System.out.println("incription a une partie");
+                        System.out.println("choisir partie");
+                        int n = sc.nextInt(); //mettre sur 1 octet
+                        //int numeropartie = n & 0xFF;
+                        String message = ("REGIS "+pseudo+" "+portUdp+" "+n+"***");
+                        //byte[] messageByte = message.getBytes();
+                        //messageByte[20] = (byte) numeropartie;
+                        sendTCPMessage(message);
+
+                        byte[] reg2 = (receiveTCPMessage(10));
+                        if(reg2[3]=='N'){
+                            System.out.println("echec rejoindre partie");
+                        }else{
+                            ok=true;
+                            System.out.println("enregistré dans la partie"+reg2[6]);
+                        }
+                    break;
+                    default:
+                        System.out.println("Veuillez suivre les instructions");
+                    break;
+                }  
+            } catch (Exception e) {
+                System.out.println("Veuillez suivre les instructions");
+                continue;
+            }
+            
+        }
+        avantPartie();
+    }
+
+    public static void avantPartie(){
+        boolean isOk = false;
+        System.out.println("AVANT PARTIE");
+        while(!isOk){
+            System.out.print(
+                "Sélectionnez un choix :\n" +
+                "1/ Quitter la partie en cours\n" +
+                "2/ Demander la taille d'un lobby\n" +
+                "3/ Lister les joueurs d'un lobby\n" +
+                "4/ Lister les lobbys rejoignables\n" +
+                "5/ Commencer la partie\n" +
+            "Votre choix : ");
+            int choice = sc.nextInt();
+            sc.nextLine();
+            try {
+                switch(choice){
+                case 1:
+                    System.out.println("quitter partie");
+                    sendTCPMessage("UNREG***");
+                    byte[] prem = receiveTCPMessage(1);
+                    if(prem[0]=='D'){
+                        System.out.println("D"+new String(receiveTCPMessage(8)));
+                    }else{
+                        byte[] ok = receiveTCPMessage(9);
+                        int partie = ok[5];
+                        System.out.println("ok quitter "+partie);
+                        isOk=true;
+                        launcher();
+                    }
+                    break;
+                case 2:
+                    System.out.print("Sélectionnez le numéro de la partie : ");
+                    int user_m = sc.nextInt();
+                    sendTCPMessage("SIZE? " + (char) user_m + "***");
+
+                    String requete = new String(receiveTCPMessage(6));
+                    if(requete.equals("DUNNO ")) 
+                    {
+                        System.out.println("La partie demandée n'existe pas.");
+                        break;
+                    }
+                    else if(!requete.equals("SIZE! "))
+                    {
+                        System.out.println("Requête reçue inattendue.");
+                        break;
+                    }
+
+                    // Réponse attendue : [SIZE!_m_h_w***]
+                    byte[] m = receiveTCPMessage(1); // m
+                    receiveTCPMessage(1); // _
+                    byte[] h = receiveTCPMessage(2); // h
+                    receiveTCPMessage(1); // _
+                    byte[] w = receiveTCPMessage(2); // w
+                    receiveTCPMessage(3); // ***
+                    int test2 = (w[0] & 0xff) + (w[1] & 0xff) * 0x100;
+                    System.out.println(test2);
+                    System.out.println("La partie " + (int) m[0] + " a pour hauteur " + (int) ((h[0] & 0xff) + (h[1] & 0xff) * 0x100) + " cases et pour largeur " + (int) ((w[0] & 0xff) + (w[1] & 0xff) * 0x100) + " cases.");
+                    
+                break;
+                case 3:
+                    System.out.println("liste de joueurs");
+                    System.out.println("quelle partie");
+                    int numero2 = sc.nextInt();
+                    sendTCPMessage("LIST? "+numero2+"***");
+
+                break;
+                case 4:
+                    System.out.println("liste des parties non vides");
+                    sendTCPMessage("GAME?***");
+                    /*String first = receiveTCPMessage();
+                    int nbgames = Integer.valueOf(first);
+                    System.out.println(first);
+                    for (int i = 0; i < nbgames; i++) {
+                        System.out.println(receiveTCPMessage());
+                    }
+                    */
+                    break;
+                case 5:
+                    System.out.println("début de partie");
+                    sendTCPMessage("START***");
+                    String[] start = welc();
+                    String ip = start[0];
+                    System.out.println("adresse multicast: "+ip);
+                    int port = Integer.parseInt(start[1]);
+                    System.out.println("port multicast: "+port);
+                    communication =new Communication(Integer.parseInt(portUdp));
+                    commMulticast =new CommMulticast(ip,port);
+                    Thread t = new Thread(communication);
+                    Thread t2 = new Thread(commMulticast);
+                    t.start();
+                    t2.start();
+                    isOk = true;
+                    enJeu();
+                break;
+                default:
+                    System.out.println("Veuillez suivre les instructions");
+                break;
+            }
+            } catch (Exception e) {
+                System.out.println("Veuillez suivre les instructions");
+                continue;
+            }
+            
+        }
+    }
 
     public static void enJeu(){
         //POSIT␣id␣x␣y***
-        Scanner sc = new Scanner(System.in);
         byte[] pos = receiveTCPMessage(25);
         String mess = new String(pos);
         System.out.println(mess);
@@ -659,6 +784,12 @@ public class Client {
                     String msg = sc.nextLine();
                     String out = "SEND? "+dest+" "+msg+"***";
                     sendTCPMessage(out);
+                    String recep = new String(receiveTCPMessage(8));
+                    if(recep.equals("SEND!***")){
+                        System.out.println("Message envoyé");
+                    }else{
+                        System.out.println("Erreur lors de l'envoi du message");
+                    }
                     break;
                 }
                 case 7:{
@@ -667,6 +798,12 @@ public class Client {
                     String msg = sc.nextLine();
                     String out = "MALL? "+msg+"***";
                     sendTCPMessage(out);
+                    String recep = new String(receiveTCPMessage(8));
+                    if(recep.equals("MALL!***")){
+                        System.out.println("Message envoyé");
+                    }else{
+                        System.out.println("Erreur lors de l'envoi du message");
+                    }
                     break;
                 }
             } 
@@ -705,6 +842,8 @@ public class Client {
         }
     }
     
+
+
        //recieve tcp message
     public static byte[] receiveTCPMessage(int size) {
         byte[] data=new byte[size];
@@ -776,12 +915,12 @@ public class Client {
         if(requete.equals("DUNNO ")) 
         {
             System.out.println("La partie demandée n'existe pas.");
-            pregame();
+            return null;
         }
         else if(!requete.equals("WELCO "))
         {
             System.out.println("Requête reçue inattendue.");
-            pregame();
+            return null;
         }
         byte[] m = receiveTCPMessage(1); // m
         receiveTCPMessage(1); // _

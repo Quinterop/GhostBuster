@@ -11,6 +11,14 @@ void* avant_partie(void* sock2)
     info_joueur -> sock_tcp = *((int*) sock2);
     info_joueur -> etat = 0;
 
+
+    avant_partie_aux(info_joueur);
+    return 0;
+}
+
+void avant_partie_aux(Player* info_joueur){
+
+    // Déclaration des variables
     int read_size;
     char buffer[3], message[6];
 
@@ -25,7 +33,7 @@ void* avant_partie(void* sock2)
         if(0 >= read_size) 
         {
             perror("Le client s'est déconnecté.\n");
-            return 0;
+            return;
         }
         message[read_size + 1] = '\0';
         printf("Requête reçue : %s\n", message);
@@ -80,7 +88,6 @@ void* avant_partie(void* sock2)
     
     welco(info_joueur);
     partie_en_cours(info_joueur);
-    return 0;
 }
 
 void games(Player* info_joueur)
@@ -136,7 +143,6 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     }
     else // Réception spécifique à [NEWPL_id_port***]
     {
-        printf("bonjour ZZZZZZZZZZZZZZZZ");
         for(i = 0; parties[i].etat != 0; i++){}
         info_joueur -> m = i;
     }
@@ -270,11 +276,13 @@ void unreg(Player* info_joueur)
     // Désinscription du joueur
     parties[info_joueur -> m].joueurs[info_joueur -> i] = NULL;
     parties[info_joueur -> m].s--;
+    info_joueur -> etat = 0;
 
     // Supression de la partie s'il n'y a plus de joueur dans la partie
     if(parties[info_joueur -> m].s == 0)
     {
-        parties[info_joueur -> m].etat = 0;
+        printf("La partie %u est supprimée.\n", info_joueur -> m);
+        resetGame(info_joueur -> m);
         n--;
     }
 
@@ -286,7 +294,7 @@ void unreg(Player* info_joueur)
         perror("Erreur lors de l'envoi du message [UNROK_m***].\n");
     }
     printf("Message [UNROK m***] envoyé au joueur (m = %u).\n", info_joueur -> m);
-
+    avant_partie_aux(info_joueur);
 }
 
 void size(Player* info_joueur)
@@ -434,7 +442,7 @@ void partie_en_cours(Player* info_joueur)
     {
         printf("En attente d'une requête [UPMOV_d***], [DOMOV_d***], [LEMOV_d***], [RIMOV_d***], [IQUIT***], [GLIS?***], [MALL?_mess***], [SEND?_id_mess***].\n");
         read_size = read(info_joueur -> sock_tcp, message, 5);
-        if(0 >= read_size) 
+        if(read_size<=0) 
         {
             perror("Le client s'est déconnecté.\n");
             return;
@@ -462,6 +470,18 @@ void partie_en_cours(Player* info_joueur)
         {
             read(info_joueur -> sock_tcp, buffer, 3); // ***
             gobye(info_joueur);
+            parties[info_joueur -> m].s--;
+            parties[info_joueur -> m].joueurs[info_joueur -> i] = NULL;
+            if(parties[info_joueur -> m].s == 0)
+            {
+                resetGame(info_joueur -> m);
+                printf("La partie est terminée, il n'y a plus aucuns joueurs dedans.\n");
+            }
+            else
+            {
+                printf("Le joueur %s a quitté la partie.\n", info_joueur -> id);
+            }
+            
             return;
         }
         else if(strcmp(message, "GLIS?") == 0) // [GLIS?***]
@@ -556,7 +576,7 @@ void mall(Player* info_joueur)
     printf("Message [MESSA_id_mess+++] envoyé en multicast avec succès (id = \"%s\", mess = \"%s\").\n", info_joueur -> id, mess);
    
    // Envoi du message [MALL!***]
-    char mall[8] = "MALL!***"; // [MALL!***]
+    char mall[9] = "MALL!***"; // [MALL!***]
     if(write(info_joueur -> sock_tcp, mall, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [MALL!***].\n");
@@ -597,7 +617,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
             printf("Message envoyé: %s\n",messp);
             
             // Envoi du message [SEND!***]
-            char send2[8] = "SEND!***";
+            char send2[9] = "SEND!***";
             if(send(info_joueur -> sock_tcp, send2, 8, 0) == -1)
             {
                 perror("Erreur lors de l'envoi du message [SEND!***].\n");
@@ -609,7 +629,7 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     }
     
     // Envoi du message [NSEND***]
-    char nsend[8] = "NSEND***";
+    char nsend[9] = "NSEND***";
     if(write(info_joueur -> sock_tcp, nsend, 8) == -1)
     {
         perror("Erreur lors de l'envoi du message [NSEND***].\n");
@@ -668,6 +688,41 @@ void initializeGame(){
         }
     }
 }
+
+void resetGame(uint8_t m){
+
+    parties[m].ip=malloc(sizeof(char)*16); 
+    parties[m].port=malloc(sizeof(char)*5);
+    if(parties[m].ip==NULL || parties[m].port==NULL){
+        perror("Erreur lors de l'allocation de la mémoire.\n");
+        exit(EXIT_FAILURE);
+    }
+    parties[m].sock=0; 
+    parties[m].saddr=NULL;
+    parties[m].etat=0;
+    parties[m].f=0;
+    parties[m].s=0;
+    parties[m].l=LARGEUR_DEFAUT;
+    parties[m].h=HAUTEUR_DEFAUT; 
+    for(int j=0;j<255;j++){
+        parties[m].joueurs[j]=NULL;
+    }
+}
+
+void resetPlayer(Player* joueur){
+    /*joueur->id=malloc(sizeof(char)*9);
+    char port[5]; // port UDP du joueur
+    char p[4]; // nombre de points du joueur
+    char x[4]; // coordonnée x où se trouve le joueur dans le labyrinthe
+    char y[4]; // coordonnée y où se trouve le joueur dans le labyrinthe
+    int sock_tcp; // sock du joueur
+    int sock_udp; // sock udp du joueur
+    struct sockaddr* saddr;
+    uint8_t etat; // 0 -> inscrit dans aucune partie, 1 -> inscrit dans une partie mais non lancée, 2 -> en attente du lancement de partie 3 -> en train de jouer
+    uint8_t i; // index dans les tableaux de lobby
+    uint8_t m; // partie à laquelle le joueur est inscrit*/
+}
+
 
 int main(int argc, char* argv[])
 {
