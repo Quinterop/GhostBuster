@@ -514,7 +514,10 @@ public class Client {
                     System.out.println("liste de joueurs");
                     System.out.println("quelle partie");
                     int numero2 = sc.nextInt();
-                    sendTCPMessage("LIST? "+numero2+"***");
+                    char b = (char) numero2;
+                    //System.out.println(Integer.toBinaryString(numero2));
+                    sc.nextLine();
+                    sendTCPMessage("LIST? "+b+"***");
 
                 break;
                 case 4:

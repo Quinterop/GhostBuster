@@ -330,14 +330,16 @@ void size(Player* info_joueur)
 void list(Player* info_joueur)
 {
     char buffer[3];
+    uint8_t numList = 0;
 
     // Réception de la requête [LIST?_m***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
-    read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
+    read(info_joueur -> sock_tcp, &numList, sizeof(uint8_t)); // m
     read(info_joueur -> sock_tcp, buffer, 3); // ***
-
+    printf("TEEEESSSST %u\n",numList);
+    numList=0;
     // Vérification de l'existence de la partie demandée
-    if(parties[info_joueur -> m].etat == 0)
+    if(parties[numList].etat == 0)
     {
         // Envoi du message [DUNNO***]
         dunno(info_joueur);
