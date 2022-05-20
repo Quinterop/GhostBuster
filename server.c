@@ -475,13 +475,14 @@ void partie_en_cours(Player* info_joueur)
             if(parties[info_joueur -> m].s == 0)
             {
                 resetGame(info_joueur -> m);
+                n--;
                 printf("La partie est terminée, il n'y a plus aucuns joueurs dedans.\n");
             }
             else
             {
                 printf("Le joueur %s a quitté la partie.\n", info_joueur -> id);
             }
-            
+            avant_partie_aux(info_joueur);
             return;
         }
         else if(strcmp(message, "GLIS?") == 0) // [GLIS?***]

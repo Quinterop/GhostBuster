@@ -745,6 +745,7 @@ public class Client {
                     byte[] prem = receiveTCPMessage(8);
                     System.out.println(new String(prem));
                     fin=true;
+                    launcher();
                     break;
                 }
                 case 5:{
@@ -808,7 +809,6 @@ public class Client {
                 }
             } 
         }
-        sc.close();
     }
 
     public static void connect() {
