@@ -191,7 +191,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     //address_sock.sin_port = htons(atoi(info_joueur -> port));
     //address_sock.sin_addr.s_addr = htonl(INADDR_ANY);
     
-    int r=getaddrinfo("localhost", info_joueur -> port, &hints, &first_info);
+    int r = getaddrinfo("localhost", info_joueur -> port, &hints, &first_info);
     if(r!=0)
     {
         // Envoi du message [REGNO***]
@@ -211,8 +211,8 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     printf("Socket UDP créée.\n");
     
     // Attribution du joueur dans la liste de joueurs de la partie
-    for(j = 0; parties[info_joueur->m].joueurs[j] != NULL; j++){}
-    parties[info_joueur->m].joueurs[j] = info_joueur;
+    for(j = 0; parties[info_joueur -> m].joueurs[j] != NULL; j++){}
+    parties[info_joueur -> m].joueurs[j] = info_joueur;
 
     // Attribution des valeurs par défaut s'il s'agit d'une nouvelle partie
     if(parties[info_joueur->m].etat == 0)
@@ -336,8 +336,7 @@ void list(Player* info_joueur)
     read(info_joueur -> sock_tcp, buffer, 1); // _
     read(info_joueur -> sock_tcp, &numList, sizeof(uint8_t)); // m
     read(info_joueur -> sock_tcp, buffer, 3); // ***
-    printf("TEEEESSSST %u\n",numList);
-    numList=0;
+
     // Vérification de l'existence de la partie demandée
     if(parties[numList].etat == 0)
     {
@@ -670,12 +669,15 @@ void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
 }
 
 
-void initializeGame(){
-    for(int i=0;i<255;i++){
+void initialize_game() 
+{
+    for(int i=0;i<255;i++)
+    {
         parties[i].ip=malloc(sizeof(char)*16);
         
         parties[i].port=malloc(sizeof(char)*5);
-        if(parties[i].ip==NULL || parties[i].port==NULL){
+        if(parties[i].ip==NULL || parties[i].port==NULL)
+        {
             perror("Erreur lors de l'allocation de la mémoire.\n");
             exit(EXIT_FAILURE);
         }
@@ -730,7 +732,7 @@ void resetPlayer(Player* joueur){
 int main(int argc, char* argv[])
 {
 
-    initializeGame();
+    initialize_game();
 
     // Déclaration des variables
     int port, sock, sock2, size;

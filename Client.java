@@ -24,10 +24,10 @@ public class Client {
     
     public static void main(String[] args) {
         
-        pseudo = args[0];
-        port = Integer.parseInt(args[1]);
-        /* pseudo = "remedy12";
-        port = 7779; */
+        /* pseudo = args[0];
+        port = Integer.parseInt(args[1]); */
+        pseudo = "remedy12";
+        port = 7778;
         connect();
         launcher();
         
@@ -424,11 +424,13 @@ public class Client {
                         System.out.println("incription a une partie");
                         System.out.println("choisir partie");
                         int n = sc.nextInt(); //mettre sur 1 octet
-                        //int numeropartie = n & 0xFF;
-                        String message = ("REGIS "+pseudo+" "+portUdp+" "+n+"***");
+                        byte numeropartie = (byte) (n & 0xFF);
+                        String message = ("REGIS "+pseudo+" "+portUdp+" ");
                         //byte[] messageByte = message.getBytes();
                         //messageByte[20] = (byte) numeropartie;
                         sendTCPMessage(message);
+                        sendTCPMessage(new byte[]{numeropartie});
+                        sendTCPMessage("***");
 
                         byte[] reg2 = (receiveTCPMessage(10));
                         if(reg2[3]=='N'){
@@ -514,10 +516,12 @@ public class Client {
                     System.out.println("liste de joueurs");
                     System.out.println("quelle partie");
                     int numero2 = sc.nextInt();
-                    char b = (char) numero2;
+                    byte b = (byte) (numero2 & 0xff);
                     //System.out.println(Integer.toBinaryString(numero2));
                     sc.nextLine();
-                    sendTCPMessage("LIST? "+b+"***");
+                    sendTCPMessage("LIST? ");
+                    sendTCPMessage(new byte[]{ b });
+                    sendTCPMessage("***");
 
                 break;
                 case 4:
