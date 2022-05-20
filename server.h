@@ -12,8 +12,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define LARGEUR_DEFAUT 6
-#define HAUTEUR_DEFAUT 6
+#define LARGEUR_DEFAUT 16
+#define HAUTEUR_DEFAUT 16
 #define FANTOMES_DEFAUT 6
 
 typedef struct Player
@@ -43,6 +43,7 @@ struct lobby
     uint8_t s; // nombre de joueurs inscrits
     uint16_t l; // largeur du plateau
     uint16_t h; // hauteur du plateau
+    int** plateau; // plateau de jeu
 };
 
 void* avant_partie(void* sock2);
@@ -55,6 +56,7 @@ void list(Player* info_joueur);
 void welco(Player* info_joueur);
 void regno(Player* info_joueur);
 void dunno(Player* info_joueur);
+void move(char d, Player* info_joueur);
 
 void partie_en_cours(Player* info_joueur);
 void gobye(Player* info_joueur);
@@ -65,3 +67,4 @@ void send_mess(Player* info_joueur);
 int is_lobby_ready(uint8_t m);
 void resetGame(uint8_t m);
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
+int** parse_txt(char* filename);

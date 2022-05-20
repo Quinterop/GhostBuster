@@ -405,7 +405,7 @@ void welco(Player* info_joueur)
         perror("Erreur lors de l'envoi du message [POSIT_id_x_y***] au joueur.\n");
         return;
     }
-    printf("Message [POSIT_id_x_y***] envoyé au joueur (id = %s, x = %s, y = %s).\n", info_joueur -> id, x, y);
+    printf("Message [POSIT_id_x_y***] envoyé au joueur (id = %s, x = %s, y = %s).\n", info_joueur -> id, info_joueur -> x, info_joueur -> y);
 }
 
 void regno(Player* info_joueur) 
@@ -442,7 +442,7 @@ void partie_en_cours(Player* info_joueur)
     while(1)
     {
         printf("En attente d'une requête [UPMOV_d***], [DOMOV_d***], [LEMOV_d***], [RIMOV_d***], [IQUIT***], [GLIS?***], [MALL?_mess***], [SEND?_id_mess***].\n");
-        read_size = read(info_joueur -> sock_tcp, message, 5);
+        read_size = recv(info_joueur -> sock_tcp, message, 5, 0);
         if(read_size<=0) 
         {
             perror("Le client s'est déconnecté.\n");
@@ -453,19 +453,19 @@ void partie_en_cours(Player* info_joueur)
 
         if(strcmp(message, "UPMOV") == 0) // [UPMOV_d***]
         {
-            // fait quelque chose
+            move('U', info_joueur);
         }
         else if(strcmp(message, "DOMOV") == 0) // [DOMOV_d***]
         {
-            // fait quelque chose
+            move('D', info_joueur);
         }
         else if(strcmp(message, "LEMOV") == 0) // [LEMOV_d***]
         {
-            // fait quelque chose
+            move('L', info_joueur);
         }
         else if(strcmp(message, "RIMOV") == 0) // [RIMOV_d***]
         {
-            // fait quelque chose
+            move('R', info_joueur);
         }
         else if(strcmp(message, "IQUIT") == 0) // [IQUIT***]
         {
@@ -668,7 +668,6 @@ void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
     printf("Le nombre %u est devenu %s.\n", nombre, dest);
 }
 
-
 void initialize_game() 
 {
     for(int i=0;i<255;i++)
@@ -728,11 +727,123 @@ void resetPlayer(Player* joueur){
     uint8_t m; // partie à laquelle le joueur est inscrit*/
 }
 
+void move(char d, Player* info_joueur){
+    char buffer[4], mess[4];
+    
+
+    recv(info_joueur -> sock_tcp, buffer, 1, 0);
+    recv(info_joueur -> sock_tcp, mess, 3, 0);
+    printf("Message reçu: %s\n", mess);
+    mess[3] = '\0';
+    uint16_t depl=atoi(mess);
+    printf("Deplacement demandé: %d\n", depl);
+
+    uint16_t y=atoi(info_joueur->y);
+    uint16_t x=atoi(info_joueur->x);
+
+    recv(info_joueur -> sock_tcp, buffer, 3, 0);
+    char stck[4];
+
+
+    switch (d){
+        case 'U':
+            for(uint16_t i = y ; i >= y - depl ; i--){
+                if(parties[info_joueur -> m].plateau[i][x]==1 || i - 1 < 0){
+                    uint16_to_len_str(stck, i + 1, 3);
+                    strcpy(info_joueur->y, stck);
+                    break;
+                }
+            }
+            uint16_to_len_str(stck, y - depl, 3);
+            strcpy(info_joueur -> y, stck);
+        break;
+        case 'D':
+            for(uint16_t i = y ; i <= y + depl ; i++){
+                if(parties[info_joueur -> m].plateau[i][x]==1 || i + 1 >= parties[info_joueur -> m].h){
+                    uint16_to_len_str(stck, i - 1, 3);
+                    strcpy(info_joueur -> y, stck);
+                    break;
+                }
+            }
+            uint16_to_len_str(stck, y + depl, 3);
+            strcpy(info_joueur -> y, stck);
+        break;
+        case 'L':
+            for(uint16_t i = x ; i >= x - depl ; i--){
+                if(parties[info_joueur -> m].plateau[y][i]==1 || i - 1 < 0){
+                    uint16_to_len_str(stck, i + 1, 3);
+                    strcpy(info_joueur -> x, stck);
+                    break;
+                }
+            }
+            uint16_to_len_str(stck, x - depl, 3);
+            strcpy(info_joueur -> x, stck);
+        break;
+        case 'R':
+            for(uint16_t i = x ; i <= x + depl ; i++){
+                if(parties[info_joueur -> m].plateau[y][i]==1 || i + 1 >= parties[info_joueur -> m].l){
+                    uint16_to_len_str(stck, i - 1, 3);
+                    strcpy(info_joueur -> x, stck);
+                    break;
+                }
+            }
+            uint16_to_len_str(stck, x + depl, 3);
+            strcpy(info_joueur -> x, stck);
+        break;  
+    }
+    char* mess_send = malloc(sizeof(char)*16);
+    sprintf(mess_send, "MOVE! %s %s***", info_joueur -> x, info_joueur -> y);
+    printf("Message envoyé: %s\n", mess_send);
+    send(info_joueur -> sock_tcp, mess_send, 16, 0);
+
+}
+
+uint16_t str_to_uint16(char* str){
+    uint16_t nombre = 0;
+    if(str[0]!='0'){
+        nombre=atoi(str);
+    }
+    else if (str[1]!='0'){
+        nombre=atoi(str+1);
+    }
+    else if (str[2]!='0'){
+        nombre=atoi(str+2);
+    }  
+    return nombre;
+}
+
+int** parse_txt(char* filename)
+{
+    FILE* f = fopen(filename, "r");
+    if(f == NULL)
+    {
+        perror("Erreur lors de l'ouverture du fichier.\n");
+        fclose(f);
+        exit(1);
+    }
+    int** lines = malloc(sizeof(int*) * 255);
+    int i = 0;
+    char* buffer=malloc(sizeof(char) * 255);
+    while(fgets(buffer, 255, f) != NULL)
+    {
+        lines[i] = malloc(sizeof(int) * 255);
+        for(int j = 0; j < 255; j++)
+        {
+            lines[i][j] = buffer[j] - '0';
+        }
+        i++;
+    }
+    fclose(f);
+    free(buffer);
+    return lines;
+}
+
 
 int main(int argc, char* argv[])
 {
 
     initialize_game();
+    parties[0].plateau=parse_txt("labyrinthe0.txt");
 
     // Déclaration des variables
     int port, sock, sock2, size;

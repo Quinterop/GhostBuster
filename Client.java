@@ -24,10 +24,8 @@ public class Client {
     
     public static void main(String[] args) {
         
-        /* pseudo = args[0];
-        port = Integer.parseInt(args[1]); */
-        pseudo = "remedy12";
-        port = 7778;
+        pseudo = args[0];
+        port = Integer.parseInt(args[1]);
         connect();
         launcher();
         
@@ -589,38 +587,47 @@ public class Client {
                     System.out.println("combien de cases ?");
                     int nb = sc.nextInt();
                     sc.nextLine();
+                    if(nb > 999 || nb < 1){
+                        System.out.println("Veuillez choisir un nombre entre 1 et 999");
+                        break;
+                    }
+                    String depl;
                     System.out.println("mouvement haut de "+nb+" cases");
-                    String out = "UPMOV "+nb+"***";
+                    if(nb<100){
+                        if(nb<10){
+                            depl="00"+nb;
+                        }else{
+                            depl="0"+nb;
+                        }
+                    }else{
+                        depl=""+nb;
+                    }
+                    String out = "UPMOV "+depl+"***";
                     sendTCPMessage(out);
                     
                     //MOVEF␣x␣y␣p***
                     byte[] prem = receiveTCPMessage(5);
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
+                    String rec=new String(prem);
+                    System.out.println(rec);
+                    if(rec.equals("MOVEF")){
                         System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
+                        byte[] suite = receiveTCPMessage(16);
                         String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
                         System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
+                        String p = full.substring(14,17);
+                        System.out.println("Vous avez attrapé un fantôme!\nVotre score est maintenant de: "+p+"\nEt votre position est: x = "+x2+" y = "+y2);
                         
                     }else {
                         //MOVE!␣x␣y***
                         byte[] suite = receiveTCPMessage(11);
                         String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
                         System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2);
+                        System.out.println("Vous êtes maintenant en position : x = "+x2+" y = "+y2);
                         
                     }
                 break;
@@ -629,39 +636,47 @@ public class Client {
                     System.out.println("combien de cases ?");
                     int nb = sc.nextInt();
                     sc.nextLine();
+                    if(nb > 999 || nb < 1){
+                        System.out.println("Veuillez choisir un nombre entre 1 et 999");
+                        break;
+                    }
+                    String depl;
                     System.out.println("mouvement bas de "+nb+" cases");
-                    String out = "DOMOV "+nb+"***";
+                    if(nb<100){
+                        if(nb<10){
+                            depl="00"+nb;
+                        }else{
+                            depl="0"+nb;
+                        }
+                    }else{
+                        depl=""+nb;
+                    }
+                    String out = "DOMOV "+depl+"***";
                     sendTCPMessage(out);
-                    
+
                     //MOVEF␣x␣y␣p***
                     byte[] prem = receiveTCPMessage(5);
-
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
+                    String rec=new String(prem);
+                    System.out.println(rec);
+                    if(rec.equals("MOVEF")){
                         System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
+                        byte[] suite = receiveTCPMessage(16);
                         String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
                         System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
+                        String p = full.substring(14,17);
+                        System.out.println("Vous avez attrapé un fantôme!\nVotre score est maintenant de: "+p+"\nEt votre position est: x = "+x2+" y = "+y2);
                         
                     }else {
                         //MOVE!␣x␣y***
                         byte[] suite = receiveTCPMessage(11);
                         String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
                         System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2);
+                        System.out.println("Vous êtes maintenant en position : x = "+x2+" y = "+y2);
                         
                     }
                 break;
@@ -670,39 +685,47 @@ public class Client {
                     System.out.println("combien de cases ?");
                     int nb = sc.nextInt();
                     sc.nextLine();
+                    if(nb > 999 || nb < 1){
+                        System.out.println("Veuillez choisir un nombre entre 1 et 999");
+                        break;
+                    }
+                    String depl;
                     System.out.println("mouvement gauche de "+nb+" cases");
-                    String out = "LEMOV "+nb+"***";
+                    if(nb<100){
+                        if(nb<10){
+                            depl="00"+nb;
+                        }else{
+                            depl="0"+nb;
+                        }
+                    }else{
+                        depl=""+nb;
+                    }
+                    String out = "LEMOV "+depl+"***";
                     sendTCPMessage(out);
                     
                     //MOVEF␣x␣y␣p***
                     byte[] prem = receiveTCPMessage(5);
-
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
+                    String rec=new String(prem);
+                    System.out.println(rec);
+                    if(rec.equals("MOVEF")){
                         System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
+                        byte[] suite = receiveTCPMessage(16);
                         String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
                         System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
+                        String p = full.substring(14,17);
+                        System.out.println("Vous avez attrapé un fantôme!\nVotre score est maintenant de: "+p+"\nEt votre position est: x = "+x2+" y = "+y2);
                         
                     }else {
                         //MOVE!␣x␣y***
                         byte[] suite = receiveTCPMessage(11);
                         String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
                         System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2);
+                        System.out.println("Vous êtes maintenant en position : x = "+x2+" y = "+y2);
                         
                     }
                 break;
@@ -711,38 +734,50 @@ public class Client {
                     System.out.println("combien de cases ?");
                     int nb = sc.nextInt();
                     sc.nextLine();
+                    if(nb > 999 || nb < 1){
+                        System.out.println("Veuillez choisir un nombre entre 1 et 999");
+                        break;
+                    }
+                    String depl;
                     System.out.println("mouvement droite de "+nb+" cases");
-                    String out = "RIMOV "+nb+"***";
+                    if(nb<100){
+                        if(nb<10){
+                            depl="00"+String.valueOf(nb);
+                        }else{
+                            depl="0"+String.valueOf(nb);
+                        }
+                    }else{
+                        depl=String.valueOf(nb);
+                    }
+                    System.out.println("Deplacement mgl: "+depl);
+                    String out = "RIMOV "+depl+"***";
+                    System.out.println(out);
                     sendTCPMessage(out);
                     
                     //MOVEF␣x␣y␣p***
                     byte[] prem = receiveTCPMessage(5);
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
+                    String rec=new String(prem);
+                    System.out.println(rec);
+                    if(rec.equals("MOVEF")){
                         System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
+                        byte[] suite = receiveTCPMessage(16);
                         String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
                         System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
+                        
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
+                        String p = full.substring(14,17);
+                        System.out.println("Vous avez attrapé un fantôme!\nVotre score est maintenant de: "+p+"\nEt votre position est: x = "+x2+" y = "+y2);
                         
                     }else {
                         //MOVE!␣x␣y***
                         byte[] suite = receiveTCPMessage(11);
                         String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
+                        String x2 = full.substring(6,9);
+                        String y2 = full.substring(10,13);
                         System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2); 
+                        System.out.println("Vous êtes maintenant en position : x = "+x2+" y = "+y2);
+                        
                     }
                 break;
                 }
