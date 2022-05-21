@@ -518,7 +518,7 @@ public class Client {
                     System.out.print("Entrez le message que vous souhaitez envoyer : ");
                     mess = sc.nextLine();
                     if(mess.length() > 200) {
-                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères)."));
+                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères).");
                         break;
                     }
                     if(send(destId, mess)) {
@@ -532,7 +532,7 @@ public class Client {
                     System.out.print("Entrez le message que vous souhaitez envoyer : ");
                     mess = sc.nextLine();
                     if(mess.length() > 200) {
-                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères)."));
+                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères).");
                         break;
                     }
                     if(mall(mess)) {
