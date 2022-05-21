@@ -3,6 +3,7 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 
+
 public class CommMulticast implements Runnable{
     
     String ip;
@@ -43,18 +44,31 @@ public class CommMulticast implements Runnable{
 
     @Override
     public void run() {
+        String user;
+        String message;
         try {
             while(!terminate){
+                user="";
+                message="";
                 byte[] buffer = new byte[218];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
                 String reçu = new String(packet.getData(), 0, packet.getLength());
-                String user=reçu.substring(6,14);
-                String message=reçu.substring(15,reçu.length()-3);
-                while(!affiche){
+                if(reçu.length()>16){
+                    user=reçu.substring(6,14);
+                    message=reçu.substring(15,reçu.length()-3);
                 }
-                System.out.println(user+": "+message);
-                affiche=false;
+                else{
+                    message=reçu.substring(0,reçu.length()-3);
+                }
+                //while(!affiche){}
+                if(user.equals("")){
+                    System.out.println(message);
+                }
+                else{
+                    System.out.println(user+": "+message);
+                }
+                //affiche=false;
             }
             return;
         }

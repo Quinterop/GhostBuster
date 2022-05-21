@@ -11,6 +11,7 @@ public class Communication implements Runnable{
     DatagramSocket socket;
     boolean affiche;
     volatile boolean terminate;
+    boolean isPortFree;
 
 
     public Communication(int port) {
@@ -20,10 +21,13 @@ public class Communication implements Runnable{
         System.out.println("Communication UDP: " + port);
         try {
             socket = new DatagramSocket(port);
+            isPortFree=true;
         } catch (Exception e) {
-            e.printStackTrace();
+            isPortFree=false;
         }
     }
+
+
 
     public void arreter(){
         terminate=true;
@@ -41,10 +45,9 @@ public class Communication implements Runnable{
                 String reçu = new String(packet.getData(), 0, packet.getLength());
                 String user=reçu.substring(6,14);
                 String message=reçu.substring(15,reçu.length()-3);
-                while(!affiche){
-                }
+                //while(!affiche){}
                 System.out.println(user+": "+message);
-                affiche=false;
+               // affiche=false;
             }
             return;
         }

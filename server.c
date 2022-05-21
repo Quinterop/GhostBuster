@@ -176,7 +176,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     }
 
     // Création du socket UDP du joueur
-    char ip[16], port_multicast[5];
+    char ip[16], port_multicast[5], rep_port_udp[9];
     int sock_udp;
     struct addrinfo *first_info, hints, *first_info_multicast, hints_multicast;;
     struct sockaddr* saddr;
@@ -203,6 +203,17 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     sock_udp = sock_udp;
     saddr = first_info -> ai_addr;
     printf("Socket UDP créée.\n");
+    
+    
+    recv(info_joueur -> sock_tcp, rep_port_udp, 8, 0);
+    rep_port_udp[8] = '\0';
+    if(strcmp(rep_port_udp, "NPORT***") == 0)
+    {
+        // Envoi du message [REGNO***]
+        printf("Erreur lors de la réception du port UDP du joueur.\n");
+        regno(info_joueur);
+        return;
+    }
     
     // Attribution du joueur dans la liste de joueurs de la partie
     for(j = 0; parties[m].joueurs[j] != NULL; j++) {}
@@ -400,8 +411,10 @@ void welco(Player* info_joueur)
         x = rand() % parties[info_joueur -> m].l;
         y = rand() % parties[info_joueur -> m].h;
     } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
-    uint16_to_len_str(x_string, rand() % parties[info_joueur -> m].l, 3);
-    uint16_to_len_str(y_string, rand() % parties[info_joueur -> m].h, 3);
+    //uint16_to_len_str(x_string, rand() % parties[info_joueur -> m].l, 3);
+    //uint16_to_len_str(y_string, rand() % parties[info_joueur -> m].h, 3);
+    tostrtmp(x_string, x);
+    tostrtmp(y_string, y);
     strcpy(info_joueur -> x, x_string);
     strcpy(info_joueur -> y, y_string);
 
@@ -445,8 +458,12 @@ void dunno(Player* info_joueur)
 void partie_en_cours(Player* info_joueur)
 {
     parties[info_joueur -> m].etat = 2;
+    Player* first_player = get_first_player(info_joueur);
 
-    deplacer_fantomes_aleatoirement(info_joueur);
+    if(info_joueur -> i == 0){
+        deplacer_fantomes_aleatoirement(info_joueur);
+    }
+    
 
     char buffer[3], message[6];
     int read_size;
@@ -521,7 +538,7 @@ void partie_en_cours(Player* info_joueur)
         }
         if(rand() % 2 == 1)
         {
-            deplacer_fantomes_aleatoirement(info_joueur);
+            //deplacer_fantomes_aleatoirement(info_joueur);
         }
     }
 }
@@ -767,7 +784,7 @@ void endga(Player* info_joueur) // [ENDGA_id_p+++]
 void deplacer_fantomes_aleatoirement(Player* info_joueur)
 {
     uint16_t x, y;
-    char x_string[4], y_string[4], ghost[16] = "GHOST x.. y..+++";
+    char x_string[4], y_string[4], ghost[100];
     for(uint16_t i = 0; i < parties[info_joueur -> m].f; i++)
     {
         do
@@ -776,13 +793,19 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
             y = rand() % parties[info_joueur -> m].h;
         } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
         parties[info_joueur -> m].plateau[x][y] = FANTOME;
-        uint16_to_len_str(x_string, x, 3);
-        uint16_to_len_str(y_string, y, 3);
+        //uint16_to_len_str(x_string, x, 3);
+        //uint16_to_len_str(y_string, y, 3);
+        tostrtmp(x_string, x);
+        tostrtmp(y_string, y);
 
         // Envoi du message [GHOST_x_y_+++] en multicast 
-        memcpy(ghost + 6, x_string, strlen(x_string));
-        memcpy(ghost + 10, y_string, strlen(y_string));
-        if(sendto(info_joueur -> sock_udp, ghost, 16, 0, info_joueur -> saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
+        //memcpy(ghost + 6, x_string, strlen(x_string));
+        //memcpy(ghost + 10, y_string, strlen(y_string));
+        //ghost[16] = '\0';
+        sprintf(ghost, "GHOST %s %s+++", x_string, y_string);
+        //printf("Message [GHOST_%s_%s_+++] envoyé au joueur.\n", x_string, y_string);
+        printf("TTTEEEEESSSSTTTT %s\n",ghost);
+        if(sendto(parties[info_joueur -> m].sock, ghost, 16, 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
         {
             perror("Erreur lors de l'envoi en multicast du message [GHOST_x_y_+++].\n");
             return;
@@ -846,6 +869,54 @@ void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
     printf("Le nombre %u est devenu %s.\n", nombre, dest);
 }
 
+void tostrtmp(char* dest, uint16_t nombre)
+{
+    char newString[4];
+
+    if (nombre<10)
+    {
+        sprintf(newString, "00%d", nombre);
+    }
+    else if (nombre<100)
+    {
+        sprintf(newString, "0%d", nombre);
+    }
+    else
+    {
+        sprintf(newString, "%d", nombre);
+    }
+    strcpy(dest, newString);
+}
+
+/*void udp_connect(Player* info_joueur){
+    char ip[16], port_multicast[5];
+    int sock_udp;
+    struct addrinfo *first_info, hints, *first_info_multicast, hints_multicast;;
+    struct sockaddr* saddr;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    sock_udp = socket(PF_INET, SOCK_DGRAM, 0);
+    if(sock_udp == -1)
+    {
+        // Envoi du message [REGNO***]
+        printf("Erreur lors de la création de la socket UDP du joueur.\n");
+        regno(info_joueur);
+        return;
+    }
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    
+    if(getaddrinfo("localhost", port, &hints, &first_info) != 0 || first_info == NULL)
+    {
+        // Envoi du message [REGNO***]
+        printf("Erreur lors du bind de la socket UDP du joueur.\n");
+        regno(info_joueur);
+        return;
+    }
+    sock_udp = sock_udp;
+    saddr = first_info -> ai_addr;
+    printf("Socket UDP créée.\n");
+}*/
 
 void initialize_game() 
 {

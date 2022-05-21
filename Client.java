@@ -33,7 +33,7 @@ public class Client {
             System.err.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
             System.exit(1);
         }
-        if(0 > port || port > 65535) {
+        if(2000 > port || port > 65535) {
             System.err.println("La valeur donnée au port est illégale.");
             System.exit(1);
         }
@@ -250,13 +250,26 @@ public class Client {
      * Code commun aux fonctions pour les requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
      */
     public static int newpl_regis() {
+        communication = new Communication(Integer.parseInt(portUDP));
+        if(communication.isPortFree){
+            t = new Thread(communication);
+            System.out.println("test");
+            sendTCPMessage("PORTF***");
+        }
+        else {
+            System.err.println("Le port UDP est déjà utilisé.");
+            System.out.println("Veuillez entrer un autre numéro de port UDP");
+            sendTCPMessage("NPORT***");
+        }
         String reponse = new String(receiveTCPMessage(5)); // REGNO ou REGOK
         if(reponse.equals("REGNO")) {
             receiveTCPMessage(3); // lis les "***" restantes
+            System.out.println(reponse+" NO");
             System.err.println("Échec de création de la partie.");
             return -1;
         }
         if(!reponse.equals("REGOK")) {
+            System.out.println(reponse+" ???");
             System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
@@ -355,9 +368,7 @@ public class Client {
 
         System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
         System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
-        communication = new Communication(Integer.parseInt(portUDP));
         commMulticast = new CommMulticast(welco[4], Integer.parseInt(welco[5]));
-        t = new Thread(communication);
         t2 = new Thread(commMulticast);
         t.start();
         t2.start();
@@ -418,8 +429,8 @@ public class Client {
         String[][] liste_joueurs;
 
         while(true){
-            commMulticast.affiche=true;
-            communication.affiche=true;
+            //commMulticast.affiche=true;
+            //communication.affiche=true;
             System.out.print(
                 "\nSélectionnez un choix :\n" +
                 "0-3/ Se déplacer, respectivement, vers le haut, bas, gauche et droite\n" +
@@ -427,7 +438,7 @@ public class Client {
                 "5/ Lister les joueurs de la partie\n" +
                 "6/ Envoyer un message privé\n" +
                 "7/ Envoyer un message public\n\n" +
-                "Votre choix : "
+                "Votre choix : \n"
             );
 
             // Parsing du choix de l'utilisateur
