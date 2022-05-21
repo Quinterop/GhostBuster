@@ -36,10 +36,6 @@ void avant_partie(Player* info_joueur){
             return;
         }
         message[read_size] = '\0';
-        printf("Requête reçue (taille %d) : %s\n", read_size, message);
-        for(int i = 0; i < read_size; i++) {
-            printf("Caractère %d = '%c'", i, message[i]);
-        }
 
         if(strcmp(message, "NEWPL") == 0) // [NEWPL_id_port***]
         {
@@ -140,7 +136,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     read(info_joueur -> sock_tcp, id, 8); // id
     read(info_joueur -> sock_tcp, buffer, 1); // _
     read(info_joueur -> sock_tcp, port, 4); // port
-    id[8] = '\0', port[5] = '\0';
+    id[8] = '\0', port[4] = '\0';
     if(is_regis) // Réception spécifique à [REGIS_id_port_m***]
     {
         read(info_joueur -> sock_tcp, buffer, 1); // _
