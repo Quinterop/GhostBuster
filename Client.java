@@ -503,7 +503,7 @@ public class Client {
                     deplacement = mov(n, choix);
                     if(deplacement == null) {
                         System.out.println("Echec de déplacement.");
-
+                        break;
                     }
                     System.out.println("Vous vous êtes déplacé effectivement de (" + deplacement[0] + ", " + deplacement[1] + ") vers " + fleche);
                     if(deplacement[2] != -1) {
