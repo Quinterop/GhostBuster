@@ -86,7 +86,7 @@ void avant_partie_aux(Player* info_joueur){
     printf("Le lobby est prêt, la partie va commencer.\n");
     
     welco(info_joueur);
-
+    sleep(10);
     partie_en_cours(info_joueur);
     return;
 }
@@ -176,7 +176,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     }
 
     // Création du socket UDP du joueur
-    char ip[16], port_multicast[5], rep_port_udp[9];
+    char ip[16], port_multicast[5];
     int sock_udp;
     struct addrinfo *first_info, hints, *first_info_multicast, hints_multicast;;
     struct sockaddr* saddr;
@@ -205,15 +205,15 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     printf("Socket UDP créée.\n");
     
     
-    recv(info_joueur -> sock_tcp, rep_port_udp, 8, 0);
-    rep_port_udp[8] = '\0';
-    if(strcmp(rep_port_udp, "NPORT***") == 0)
+    
+    if(is_port_free(port) == 0)
     {
         // Envoi du message [REGNO***]
-        printf("Erreur lors de la réception du port UDP du joueur.\n");
+        printf("Le port est déjà utilisé.\n");
         regno(info_joueur);
         return;
     }
+
     
     // Attribution du joueur dans la liste de joueurs de la partie
     for(j = 0; parties[m].joueurs[j] != NULL; j++) {}
@@ -1000,6 +1000,24 @@ int** parse_txt(char* filename)
 int send_multicast(Player* info_joueur, char* message, int len){
     return sendto(parties[info_joueur -> m].sock, message, len, 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in));
 }
+
+int is_port_free(char* port){
+    for(uint16_t i = 0; i < 255; i++)
+    {
+        if(parties[i].etat == 1)
+        {
+            for(uint16_t j = 0 ;j < 255; j++){
+                if(parties[i].joueurs[j] != NULL){
+                    if(strcmp(parties[i].joueurs[j] -> port, port)==0){
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+    return 1;
+}
+
 
 int main(int argc, char* argv[])
 {

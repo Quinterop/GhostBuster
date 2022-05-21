@@ -250,17 +250,6 @@ public class Client {
      * Code commun aux fonctions pour les requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
      */
     public static int newpl_regis() {
-        communication = new Communication(Integer.parseInt(portUDP));
-        if(communication.isPortFree){
-            t = new Thread(communication);
-            System.out.println("test");
-            sendTCPMessage("PORTF***");
-        }
-        else {
-            System.err.println("Le port UDP est déjà utilisé.");
-            System.out.println("Veuillez entrer un autre numéro de port UDP");
-            sendTCPMessage("NPORT***");
-        }
         String reponse = new String(receiveTCPMessage(5)); // REGNO ou REGOK
         if(reponse.equals("REGNO")) {
             receiveTCPMessage(3); // lis les "***" restantes
@@ -365,6 +354,7 @@ public class Client {
         sendTCPMessage("START***");
         String[] welco = welco();
         commMulticast = new CommMulticast(welco[4], Integer.parseInt(welco[5]));
+        communication = new Communication(Integer.parseInt(portUDP));
         t2 = new Thread(commMulticast);
         t.start();
         t2.start();
