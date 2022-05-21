@@ -338,8 +338,11 @@ public class Client {
         if(0 > m || m > 255) {
             System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
             return null;
-        } 
-        sendTCPMessage("SIZE? " + (char) m + "***");
+        }
+        m = m & 0xff;
+        byte[] message = new String("SIZE? m***").getBytes();;
+        message[6] = (byte) m;
+        sendTCPMessage(message);
 
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
@@ -369,7 +372,10 @@ public class Client {
             System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
             return null;
         }
-        sendTCPMessage("LIST? " + (char) m + "***");
+        m = m & 0xff;
+        byte[] message = new String("LIST? m***").getBytes();;
+        message[6] = (byte) m;
+        sendTCPMessage(message);
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
             receiveTCPMessage(3); // lis les "***" restantes
@@ -494,8 +500,8 @@ public class Client {
         String[][] liste_joueurs;
 
         while(true){
-            commMulticast.affiche=true;
-            communication.affiche=true;
+            commMulticast.affiche = true;
+            communication.affiche = true;
             
             System.out.println(
                 "\nSélectionnez un choix :\n" +

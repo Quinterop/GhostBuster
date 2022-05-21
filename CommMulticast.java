@@ -2,8 +2,6 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 
-
-
 public class CommMulticast implements Runnable{
     
     String ip;
@@ -13,43 +11,40 @@ public class CommMulticast implements Runnable{
     InetAddress address;
     volatile boolean terminate;
 
-
-    
-
-    public CommMulticast(String ip,int port) {
+    public CommMulticast(String ip, int port) {
         this.port = port;
         try {
-            address=InetAddress.getByName(ip);
-            affiche=false;
-            terminate=false;
+            address = InetAddress.getByName(ip);
+            affiche = false;
+            terminate = false;
             socket = new MulticastSocket(port);
             socket.joinGroup(address);
-            System.out.println("Communication Multicast: " + port+" "+InetAddress.getByName(ip));
-        } catch (Exception e) {
+            System.out.println("Communication Multicast : " + port + " " + InetAddress.getByName(ip));
+        } 
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void arreter(){
-        terminate=true;
+        terminate = true;
         System.out.println("Déconnexion du multicast");
         try {
             socket.leaveGroup(address);
             socket.close();
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+        } 
+        catch (Exception e) {
+            System.out.println("Erreur : " + e.getMessage());
             e.printStackTrace();
         }  
     }
 
     @Override
     public void run() {
-        String user;
         String message;
         try {
             while(!terminate) {
-                user="";
-                message="";
+                message = "";
                 byte[] buffer = new byte[218];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
@@ -69,9 +64,7 @@ public class CommMulticast implements Runnable{
                 else {
                     message = reçu.substring(0, reçu.length() - 3);
                 }
-                //while(!affiche){}
                 System.out.println(message);
-                //affiche=false;
             }
             return;
         }
