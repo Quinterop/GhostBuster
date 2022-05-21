@@ -84,15 +84,6 @@ public class Client {
                 case 1: // [NEWPL_id_port***]
                     System.out.print("Veuillez entrer un numéro de port UDP : ");
                     portUDP = sc.nextLine();
-                    try {
-                        if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
-                            throw new IllegalArgumentException();    
-                        }
-                    }
-                    catch (IllegalArgumentException e) {
-                        System.out.println("Numéro de port illégal.");
-                        break;
-                    }
                     m = newpl(id, portUDP);
                     if(m == -1) {
                         System.out.println("Erreur lors de la création de la nouvelle partie.");
@@ -103,23 +94,11 @@ public class Client {
                 case 2: // [REGIS_id_port_m***]
                     System.out.print("Veuillez entrer un numéro de port UDP : ");
                     portUDP = sc.nextLine();
-                    try {
-                        if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
-                            throw new IllegalArgumentException();    
-                        }
-                    }
-                    catch (IllegalArgumentException e) {
-                        System.out.println("Numéro de port illégal.");
-                        break;
-                    }
                     System.out.print("Sélectionnez le numéro de partie que vous souhaitez rejoindre : ");
                     try {
                         n = Integer.parseInt(sc.nextLine());
-                        if(0 > n || n > 255) {
-                            throw new IllegalArgumentException();
-                        }
                     } 
-                    catch (IllegalArgumentException e) {
+                    catch (NumberFormatException e) {
                         System.out.println("Numéro de partie illégal.");
                         break;
                     }
@@ -142,11 +121,8 @@ public class Client {
                     System.out.print("Sélectionnez le numéro de la partie : ");
                     try {
                         m = Integer.parseInt(sc.nextLine());
-                        if(0 > m || m > 255) {
-                            throw new IllegalArgumentException();
-                        }
                     } 
-                    catch (IllegalArgumentException e) {
+                    catch (NumberFormatException e) {
                         System.out.println("Numéro de partie illégal.");
                         break;
                     }
@@ -161,11 +137,8 @@ public class Client {
                     System.out.print("Sélectionnez le numéro de la partie : ");
                     try {
                         m = Integer.parseInt(sc.nextLine());
-                        if(0 > m || m > 255) {
-                            throw new IllegalArgumentException();
-                        }
                     } 
-                    catch (IllegalArgumentException e) {
+                    catch (NumberFormatException e) {
                         System.out.println("Numéro de partie illégal.");
                         break;
                     }
@@ -233,6 +206,25 @@ public class Client {
      * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
      */
     public static int newpl(String id, String portUDP) {
+        int port;
+        if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {                        
+            System.out.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
+            return -1;
+        }
+        try {
+            port = Integer.parseInt(portUDP);
+            if(1024 > port || port > 8191) {
+                throw new IllegalArgumentException();
+            }
+        }
+        catch (NumberFormatException e) {
+            System.err.println("Le port UDP n'est pas un nombre.");
+            return -1;
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("Le numéro de port UDP doit être compris entre 1024 et 8191.");
+            return -1;
+        }
         sendTCPMessage("NEWPL " + id + " " + portUDP + "***");
         return newpl_regis();
     }
@@ -245,6 +237,29 @@ public class Client {
      * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
      */
     public static int regis(String id, String portUDP, int m) {
+        int port;
+        if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {                        
+            System.out.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
+            return -1;
+        }
+        try {
+            port = Integer.parseInt(portUDP);
+            if(1024 > port || port > 8191) {
+                throw new IllegalArgumentException();
+            }
+        }
+        catch (NumberFormatException e) {
+            System.err.println("Le port UDP n'est pas un nombre.");
+            return -1;
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("Le numéro de port UDP doit être compris entre 1024 et 8191.");
+            return -1;
+        }
+        if(0 > m || m > 255) {
+            System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
+            return -1;
+        }
         sendTCPMessage("REGIS " + id + " " + portUDP + " " + (char) m + "***");
         return newpl_regis();
     }
@@ -294,6 +309,10 @@ public class Client {
      * @return un tableau au format {m, h, w} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant. Renvoie null si la partie m n'existe pas.
      */
     public static int[] size(int m) {
+        if(0 > m || m > 255) {
+            System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
+            return null;
+        } 
         sendTCPMessage("SIZE? " + (char) m + "***");
 
         String reponse = new String(receiveTCPMessage(5));
@@ -320,6 +339,10 @@ public class Client {
      * @return un tableau listant les ID des joueurs de la partie m. Renvoie null si la partie m est inexistante.
      */
     public static String[] list(int m) {
+        if(0 > m || m > 255) {
+            System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
+            return null;
+        }
         sendTCPMessage("LIST? " + (char) m + "***");
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
@@ -350,6 +373,7 @@ public class Client {
 
     /**
      * Envoie la requête [START***] au serveur
+     * @return true si la requête est passée sans problème, false sinon
      */
     public static boolean start() {
         sendTCPMessage("START***");
@@ -470,15 +494,16 @@ public class Client {
                     System.out.print("De combien de cases souhaitez-vous vous déplacer : ");
                     try {
                         n = Integer.parseInt(sc.nextLine());
-                        if(n > 999 || 1 > n) {
-                            throw new IllegalArgumentException();
-                        }
                     }
-                    catch (IllegalArgumentException e) {
-                        System.out.println("Veuillez sélectionner un nombre valide compris entre 1 et 999.");
+                    catch (NumberFormatException e) {
+                        System.out.println("Veuillez sélectionner un nombre valide.");
                         break;
                     }
                     deplacement = mov(n, choix);
+                    if(deplacement == null) {
+                        System.out.println("Echec de déplacement.");
+
+                    }
                     System.out.println("Vous vous êtes déplacé effectivement de (" + deplacement[0] + ", " + deplacement[1] + ") vers " + fleche);
                     if(deplacement[2] != -1) {
                         System.out.println("Vous avez attrapé un fantôme ! Votre score est de " + deplacement[2]);
@@ -511,16 +536,8 @@ public class Client {
                 case 6: // [SEND?_id_mess***]
                     System.out.print("À qui voulez-vous envoyer un message privé : ");
                     destId = sc.nextLine();
-                    if(destId.length() != 8 && destId.matches("^.*[^a-zA-Z0-9 ].*$")) {
-                        System.out.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
-                        break;
-                    }
                     System.out.print("Entrez le message que vous souhaitez envoyer : ");
                     mess = sc.nextLine();
-                    if(mess.length() > 200) {
-                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères).");
-                        break;
-                    }
                     if(send(destId, mess)) {
                         System.out.println("Message envoyé.");
                     }
@@ -531,10 +548,6 @@ public class Client {
                 case 7: // [MALL?_mess***]
                     System.out.print("Entrez le message que vous souhaitez envoyer : ");
                     mess = sc.nextLine();
-                    if(mess.length() > 200) {
-                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères).");
-                        break;
-                    }
                     if(mall(mess)) {
                         System.out.println("Message envoyé.");
                     }
@@ -557,6 +570,11 @@ public class Client {
      * @return {x, y, p} où x et y sont les nouvelles coordonnées du joueur, et p son nouveau score s'il a touché un fantôme - sinon -1 -
      */
     public static int[] mov(int d, int direction) { 
+        if(d > 999 || 1 > d) {
+            System.err.println("La valeur de déplacement doit être comprise entre 1 et 999.");
+            return null;
+        }
+
         // Déclaration des variables
         String coordonnees, d_string, p, reponse, requete, x, y;
 
@@ -672,6 +690,13 @@ public class Client {
      * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
     */
     public static boolean send(String id, String mess) {
+        if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {
+            System.err.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
+        }
+        if(mess.length() > 200 || mess.contains("***") || mess.contains("+++")) {
+            System.err.println("Le message envoyé ne doit pas contenir la chaîne \"+++\" ou \"***\", et doit être de longueur inférieure à 200.");
+            return false;
+        }
         sendTCPMessage("SEND? " + id + " " + mess + "***");
         return new String(receiveTCPMessage(8)).equals("SEND!***");
     }
@@ -682,6 +707,10 @@ public class Client {
      * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
      */
     public static boolean mall(String mess) {
+        if(mess.length() > 200 || mess.contains("***") || mess.contains("+++")) {
+            System.err.println("Le message envoyé ne doit pas contenir la chaîne \"+++\" ou \"***\", et doit être de longueur inférieure à 200.");
+            return false;
+        }
         sendTCPMessage("MALL? " + mess + "***");
         return new String(receiveTCPMessage(8)).equals("MALL!***");
     }
