@@ -38,8 +38,8 @@ typedef struct Player
 
 struct lobby
 {
-    char* ip; // adresse IP de multi-diffusion
-    char* port; // port de multi-diffusion
+    char ip[16]; // adresse IP de multi-diffusion
+    char port[5]; // port de multi-diffusion
     int sock; // socket de multi-diffusion
     int** plateau; // plateau de jeu
     int** fantomes; // tableau des fantomes
