@@ -161,13 +161,13 @@ public class Client {
                     break;
                 case 7: // [START***]
                     String[][] start = start();
-                    if(start() == null) {
+                    if(start == null) {
                         System.out.println("Erreur lors de la tentative de début de partie");
-                        return;
+                        break;
                     }
-                    System.out.println("Bienvenue dans la partie numéro" + start[0][0] + " qui a pour hauteur " + start[0][1] + " cases pour largeur " + start[0][2] + " cases ainsi que " + start[0][3] + " fantômes et dont l'ip est " + start[0][4] + " et le port est " + start[0][5] +
+                    System.out.println("Bienvenue dans la partie numéro " + start[0][0] + " qui a pour hauteur " + start[0][1] + " cases pour largeur " + start[0][2] + " cases ainsi que " + start[0][3] + " fantômes et dont l'ip est " + start[0][4] + " et le port est " + start[0][5] +
                     "\nVous êtes positonné dans les coordonnées (" + start[1][1] + ", " + start[1][2] + ").");
-                    break;
+                    return;
                 default:
                     System.out.println("Choix donné illégal.");
                     break;

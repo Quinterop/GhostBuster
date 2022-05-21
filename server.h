@@ -53,7 +53,7 @@ struct lobby
 };
 
 void* hub(void* sock2);
-void avant_partie_aux(Player* info_joueur);
+void avant_partie(Player* info_joueur);
 void games(Player* info_joueur);
 void newpl_regis(Player* info_joueur, uint8_t is_regis);
 void unreg(Player* info_joueur);

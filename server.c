@@ -11,11 +11,11 @@ void* hub(void* sock2)
     info_joueur -> sock_tcp = *((int*) sock2);
     info_joueur -> etat = 0;
 
-    avant_partie_aux(info_joueur);
+    avant_partie(info_joueur);
     return 0;
 }
 
-void avant_partie_aux(Player* info_joueur){
+void avant_partie(Player* info_joueur){
 
     // Déclaration des variables
     int read_size;
@@ -84,7 +84,7 @@ void avant_partie_aux(Player* info_joueur){
         printf("Test du lobby...\n");
         sleep(5);
     }
-    printf("Le lobby est prêt, la partie va commencer.\n");
+    printf("[%s] Le lobby est prêt, la partie va commencer.\n", info_joueur -> id);
     
     welco(info_joueur);
 
@@ -231,6 +231,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
         strcpy(parties[m].port, port_multicast);
         parties[m].saddr = first_info_multicast -> ai_addr;
         parties[m].etat = 1;
+        parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
         pthread_mutex_unlock(&verrou);
     }
     
@@ -238,6 +239,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     info_joueur -> etat = 1;
     strcpy(info_joueur -> id, id);
     strcpy(info_joueur -> port, port);
+    info_joueur -> i = j;
     info_joueur -> m = m;
     info_joueur -> sock_udp = sock_udp;
     info_joueur -> saddr = saddr;
@@ -270,17 +272,21 @@ void unreg(Player* info_joueur)
     }
 
     // Désinscription du joueur
+    pthread_mutex_lock(&verrou);
     parties[info_joueur -> m].joueurs[info_joueur -> i] = NULL;
     parties[info_joueur -> m].s--;
+    pthread_mutex_unlock(&verrou);
     info_joueur -> etat = 0;
 
     // Supression de la partie s'il n'y a plus de joueur dans la partie
     if(parties[info_joueur -> m].s == 0)
     {
         printf("La partie %u est supprimée.\n", info_joueur -> m);
-        parties[info_joueur -> m].etat = 0; 
+        pthread_mutex_lock(&verrou);
+        parties[info_joueur -> m].etat = 0;
         reset_game(info_joueur -> m);
         n--;
+        pthread_mutex_unlock(&verrou);
     }
 
     // Envoi du message [UNROK_m***]
@@ -388,19 +394,18 @@ void welco(Player* info_joueur)
     }
     printf("Message [WELCO_m_h_w_f_ip_port***] envoyé au joueur (m = %u, h = %u, w = %u, f = %u, ip = %s, port = %s).\n", info_joueur -> m, parties[info_joueur -> m].h, parties[info_joueur -> m].l, parties[info_joueur -> m].f, parties[info_joueur -> m].ip, parties[info_joueur -> m].port);
 
-    if(info_joueur == get_first_player(info_joueur))
-    {
-        parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
-    }
-
     // Définition de la position x et y de départ du joueur dans le labyrinthe
     char x_string[4], y_string[4];
     uint16_t x, y;
+
+    pthread_mutex_lock(&verrou);
     do
     {  
         x = rand() % parties[info_joueur -> m].l;
         y = rand() % parties[info_joueur -> m].h;
     } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
+    pthread_mutex_unlock(&verrou);
+
     uint16_to_len_str(x_string, rand() % parties[info_joueur -> m].l, 3);
     uint16_to_len_str(y_string, rand() % parties[info_joueur -> m].h, 3);
     strcpy(info_joueur -> x, x_string);
@@ -445,10 +450,10 @@ void dunno(Player* info_joueur)
 
 void partie_en_cours(Player* info_joueur)
 {
+    pthread_mutex_lock(&verrou);
     parties[info_joueur -> m].etat = 2;
+    pthread_mutex_unlock(&verrou);
     strcpy(info_joueur -> p, "0000");
-
-    deplacer_fantomes_aleatoirement(info_joueur);
 
     char buffer[3], message[6];
     int read_size;
@@ -486,6 +491,7 @@ void partie_en_cours(Player* info_joueur)
         {
             read(info_joueur -> sock_tcp, buffer, 3); // ***
             gobye(info_joueur);
+            pthread_mutex_lock(&verrou);
             parties[info_joueur -> m].s--;
             parties[info_joueur -> m].joueurs[info_joueur -> i] = NULL;
             if(parties[info_joueur -> m].s == 0)
@@ -498,6 +504,7 @@ void partie_en_cours(Player* info_joueur)
             {
                 printf("Le joueur %s a quitté la partie.\n", info_joueur -> id);
             }
+            pthread_mutex_unlock(&verrou);
             return;
         }
         else if(strcmp(message, "GLIS?") == 0) // [GLIS?***]
@@ -712,8 +719,8 @@ void send_mess(Player* info_joueur) // [SEND?_id_mess***]
     
     // Envoi du message [SEND?_id2_mess+++]
     char messp[219]; 
-    sprintf(messp, "SEND? %s %s+++", info_joueur->id,mess);
-    for(uint8_t i = 0; i < parties[info_joueur->m].s; i++)
+    sprintf(messp, "SEND? %s %s+++", info_joueur -> id , mess);
+    for(uint8_t i = 0; i < parties[info_joueur -> m].s; i++)
     {
         printf("id joueurs = %s\n", parties[info_joueur -> m].joueurs[i] -> id);
         if(parties[info_joueur -> m].joueurs[i] != NULL && strcmp(parties[info_joueur -> m].joueurs[i] -> id, id) == 0)
@@ -772,11 +779,13 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
     char x_string[4], y_string[4], ghost[16] = "GHOST x.. y..+++";
     for(uint16_t i = 0; i < parties[info_joueur -> m].f; i++)
     {
+        pthread_mutex_lock(&verrou);
         do
         {
             x = rand() % parties[info_joueur -> m].l;
             y = rand() % parties[info_joueur -> m].h;
         } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
+        pthread_mutex_unlock(&verrou);
         parties[info_joueur -> m].plateau[x][y] = FANTOME;
         uint16_to_len_str(x_string, x, 3);
         uint16_to_len_str(y_string, y, 3);
@@ -803,7 +812,7 @@ int is_lobby_ready(uint8_t m)
             a++;
         }
     }
-    printf("Nombre de joueurs (prêts) : %d (%d).\n", parties[m].s, a);
+    printf("Nombre de joueurs (prêts) : %u (%d).\n", parties[m].s, a);
     return a > 0 && a == parties[m].s;
 }
 
