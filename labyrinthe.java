@@ -8,8 +8,8 @@ public class labyrinthe{
 
     static int fileId=0;
 
-    static void writeInFile(int[][] labyrinthe/*, String filename*/){
-        String fileName="labyrinthe"+ fileId+".txt";
+    static void writeInFile(int[][] labyrinthe, String filename){
+        String fileName="labyrinthe"+ filename+".txt";
         fileId++;
         //File file=new File(fileName);
         try {
@@ -411,24 +411,24 @@ public class labyrinthe{
     }
 
     public static void main(String[] args) {
-        for(int i=0;i<10;i++){
+        //for(int i=0;i<10;i++){
             int h = Integer.parseInt(args[0]);
             int w = Integer.parseInt(args[1]);
-            //String filename = args[2];
+            String filename = args[2];
             LinkedList<Integer> last_direction=new LinkedList<Integer>();
             char[][] maze=create_maze_grid(h, w);
             maze=create_maze_rec(maze,3,3,last_direction);
-            //print_maze(maze);
+            print_maze(maze);
             int[][] maze_int=replaceCharByInt(maze);
-            //printLab(maze_int);
-            writeInFile(maze_int/*, filename*/);
+            printLab(maze_int);
+            writeInFile(maze_int, filename);
             //writeInFile(maze);
             //int[][] lab=create_lab_grid(4,4);
             
             //lab=create_lab_rec(lab,3,3,last_direction);
             
             //printLab(lab);
-        }
+        //}
     }
 
 }
