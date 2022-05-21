@@ -9,7 +9,6 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.stream.Stream;
 
 public class Client {
     public static String id; // 8 caractères max
@@ -39,36 +38,36 @@ public class Client {
             System.exit(1);
         }
         System.out.println("Ligne de commande parsée.");
-        
+
         connect("127.0.0.1");
         avantPartie();
         enJeu();
     }
-    
+
     public static void avantPartie() {
         // Déclaration des variables
         int choix, m, n;
         int[][] ogame;
-        
+
         // Réception des messages [GAMES_n***] et [OGAME_m_s***] envoyés en connexion au serveur.
         ogame = get_game();
         for(int i = 0; i < ogame.length; i++) {
             System.out.println("La partie numéro " + ogame[i][0] + " a " + ogame[i][1] + " joueurs.");
         }
-        
+
         while(true) {
             System.out.print(
-            "\nSélectionnez un choix :\n" +
-            "1/ Créer une nouvelle partie\n" +
-            "2/ Rejoindre une partie existante\n" +
-            "3/ Quitter la partie en cours\n" +
-            "4/ Demander la taille d'un lobby\n" +
-            "5/ Lister les joueurs d'un lobby\n" +
-            "6/ Lister les lobbys rejoignables\n" +
-            "7/ Commencer la partie\n\n" +
-            "Votre choix : "
+                "\nSélectionnez un choix :\n" +
+                "1/ Créer une nouvelle partie\n" +
+                "2/ Rejoindre une partie existante\n" +
+                "3/ Quitter la partie en cours\n" +
+                "4/ Demander la taille d'un lobby\n" +
+                "5/ Lister les joueurs d'un lobby\n" +
+                "6/ Lister les lobbys rejoignables\n" +
+                "7/ Commencer la partie\n\n" +
+                "Votre choix : "
             );
-            
+
             // Parsing du choix de l'utilisateur
             try {
                 choix = Integer.parseInt(sc.nextLine());
@@ -80,112 +79,115 @@ public class Client {
                 System.out.println("Choix donné illégal.");
                 continue;
             }
-            
+
             switch(choix) {
                 case 1: // [NEWPL_id_port***]
-                System.out.print("Veuillez entrer un numéro de port UDP : ");
-                portUDP = sc.nextLine();
-                m = newpl(id, portUDP);
-                if(m == -1) {
-                    System.out.println("Erreur lors de la création de la nouvelle partie.");
-                    break;          
-                }
-                System.out.println("Nouvelle partie numéro " + m + " créée.");
-                break;
+                    System.out.print("Veuillez entrer un numéro de port UDP : ");
+                    portUDP = sc.nextLine();
+                    m = newpl(id, portUDP);
+                    if(m == -1) {
+                        System.out.println("Erreur lors de la création de la nouvelle partie.");
+                        break;          
+                    }
+                    System.out.println("Nouvelle partie numéro " + m + " créée.");
+                    break;
                 case 2: // [REGIS_id_port_m***]
-                System.out.print("Veuillez entrer un numéro de port UDP : ");
-                portUDP = sc.nextLine();
-                System.out.print("Sélectionnez le numéro de partie que vous souhaitez rejoindre : ");
-                try {
-                    n = Integer.parseInt(sc.nextLine());
-                } 
-                catch (NumberFormatException e) {
-                    System.out.println("Numéro de partie illégal.");
+                    System.out.print("Veuillez entrer un numéro de port UDP : ");
+                    portUDP = sc.nextLine();
+                    System.out.print("Sélectionnez le numéro de partie que vous souhaitez rejoindre : ");
+                    try {
+                        n = Integer.parseInt(sc.nextLine());
+                    } 
+                    catch (NumberFormatException e) {
+                        System.out.println("Numéro de partie illégal.");
+                        break;
+                    }
+                    m = regis(id, portUDP, n);
+                    if(m == -1) {
+                        System.out.println("Erreur lors de la tentative de join la partie citée.");
+                        break;
+                    }
+                    System.out.println("Vous avez rejoins la partie numéro " + m + ".");
                     break;
-                }
-                m = regis(id, portUDP, n);
-                if(m == -1) {
-                    System.out.println("Erreur lors de la tentative de join la partie citée.");
-                    break;
-                }
-                System.out.println("Vous avez rejoins la partie numéro " + m + ".");
-                break;
                 case 3: // [UNREG***]
-                m = unreg();
-                if(m == -1) {
-                    System.out.println("Vous n'avez aucune partie à quitter.");
+                    m = unreg();
+                    if(m == -1) {
+                        System.out.println("Vous n'avez aucune partie à quitter.");
+                        break;
+                    }
+                    System.out.println("Vous avez quitté la partie numéro " + m + ".");
                     break;
-                }
-                System.out.println("Vous avez quitté la partie numéro " + m + ".");
-                break;
                 case 4: // [SIZE?_m***]
-                System.out.print("Sélectionnez le numéro de la partie : ");
-                try {
-                    m = Integer.parseInt(sc.nextLine());
-                } 
-                catch (NumberFormatException e) {
-                    System.out.println("Numéro de partie illégal.");
+                    System.out.print("Sélectionnez le numéro de la partie : ");
+                    try {
+                        m = Integer.parseInt(sc.nextLine());
+                    } 
+                    catch (NumberFormatException e) {
+                        System.out.println("Numéro de partie illégal.");
+                        break;
+                    }
+                    int[] s = size(m);
+                    if(s == null) {
+                        System.out.println("Erreur lors de la demande de taille de cette partie. Elle peut être inexistante.");
+                        break;
+                    }
+                    System.out.println("La partie " + s[0] + " a pour hauteur " + s[1] + " cases et pour largeur " + s[2] + " cases.");
                     break;
-                }
-                int[] s = size(m);
-                if(s == null) {
-                    System.out.println("Erreur lors de la demande de taille de cette partie. Elle peut être inexistante.");
-                    break;
-                }
-                System.out.println("La partie " + s[0] + " a pour hauteur " + s[1] + " cases et pour largeur " + s[2] + " cases.");
-                break;
                 case 5: // [LIST?_m***]
-                System.out.print("Sélectionnez le numéro de la partie : ");
-                try {
-                    m = Integer.parseInt(sc.nextLine());
-                } 
-                catch (NumberFormatException e) {
-                    System.out.println("Numéro de partie illégal.");
+                    System.out.print("Sélectionnez le numéro de la partie : ");
+                    try {
+                        m = Integer.parseInt(sc.nextLine());
+                    } 
+                    catch (NumberFormatException e) {
+                        System.out.println("Numéro de partie illégal.");
+                        break;
+                    }
+                    String[] id_list = list(m);
+                    if(id_list == null) {
+                        System.out.println("Erreur lors de la demande de joueurs de cette partie. Elle peut être inexistante.");
+                        break;
+                    }
+
+                    for(int i = 0; i < id_list.length; i++) {
+                        System.out.println("ID : " + id_list[i]);
+                    }
                     break;
-                }
-                String[] id_list = list(m);
-                if(id_list == null) {
-                    System.out.println("Erreur lors de la demande de joueurs de cette partie. Elle peut être inexistante.");
-                    break;
-                }
-                
-                for(int i = 0; i < id_list.length; i++) {
-                    System.out.println("ID : " + id_list[i]);
-                }
-                break;
                 case 6: // [GAME?***]
-                ogame = game();
-                System.out.println("Nombre de parties : " + ogame.length);
-                for(int i = 0; i < ogame.length; i++) {
-                    System.out.println("La partie numéro " + ogame[i][0] + " a " + ogame[i][1] + " joueurs.");
-                }
-                break;
+                    ogame = game();
+                    System.out.println("Nombre de parties : " + ogame.length);
+                    for(int i = 0; i < ogame.length; i++) {
+                        System.out.println("La partie numéro " + ogame[i][0] + " a " + ogame[i][1] + " joueurs.");
+                    }
+                    break;
                 case 7: // [START***]
-                if(start().length == 0) {
-                    System.out.println("Erreur lors de la tentative de début de partie");
-                    return;
-                }
-                break;
+                    String[][] start = start();
+                    if(start() == null) {
+                        System.out.println("Erreur lors de la tentative de début de partie");
+                        return;
+                    }
+                    System.out.println("Bienvenue dans la partie numéro" + start[0][0] + " qui a pour hauteur " + start[0][1] + " cases pour largeur " + start[0][2] + " cases ainsi que " + start[0][3] + " fantômes et dont l'ip est " + start[0][4] + " et le port est " + start[0][5] +
+                    "\nVous êtes positonné dans les coordonnées (" + start[1][1] + ", " + start[1][2] + ").");
+                    break;
                 default:
-                System.out.println("Choix donné illégal.");
-                break;
+                    System.out.println("Choix donné illégal.");
+                    break;
             }
         }
     }
-    
+
     /**
-    * Envoie la requête [GAME?***] au serveur
-    * @return un tableau de tableaux sous la forme [0: m, 1: s] où m est le numéro de partie et s le nombre de joueurs
-    */
+     * Envoie la requête [GAME?***] au serveur
+     * @return un tableau de tableaux sous la forme [0: m, 1: s] où m est le numéro de partie et s le nombre de joueurs
+     */
     public static int[][] game() {
         sendTCPMessage("GAME?***");
         return get_game();
     }
-    
-    /**
-    * Reçoit la requête [GAME?***] au serveur
-    * @return un tableau de tableaux sous la forme [0: m, 1: s] où m est le numéro de partie et s le nombre de joueurs
-    */
+
+     /**
+     * Reçoit la requête [GAME?***] au serveur
+     * @return un tableau de tableaux sous la forme [0: m, 1: s] où m est le numéro de partie et s le nombre de joueurs
+     */
     public static int[][] get_game() {
         byte[] first = receiveTCPMessage(10);
         int nbgames = first[6];
@@ -196,16 +198,16 @@ public class Client {
             byte[] gamei = receiveTCPMessage(12);
             output[i] = new int[]{gamei[6], gamei[8]};
         }
-        
+
         return output;
     }
-    
+
     /**
-    * Envoie la requête [NEWPL_id_port***]
-    * @param id l'id du joueur
-    * @param portUDP le port UDP du joueur
-    * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
-    */
+     * Envoie la requête [NEWPL_id_port***]
+     * @param id l'id du joueur
+     * @param portUDP le port UDP du joueur
+     * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
+     */
     public static int newpl(String id, String portUDP) {
         int port;
         if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {                        
@@ -229,14 +231,14 @@ public class Client {
         sendTCPMessage("NEWPL " + id + " " + portUDP + "***");
         return newpl_regis();
     }
-    
+
     /**
-    * Envoie la requête [REGIS_id_port_m***]
-    * @param id l'id du joueur
-    * @param portUDP le port UDP du joueur
-    * @param m la partie souhaitée être rejoins
-    * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
-    */
+     * Envoie la requête [REGIS_id_port_m***]
+     * @param id l'id du joueur
+     * @param portUDP le port UDP du joueur
+     * @param m la partie souhaitée être rejoins
+     * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
+     */
     public static int regis(String id, String portUDP, int m) {
         int port;
         if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {                        
@@ -264,10 +266,10 @@ public class Client {
         sendTCPMessage("REGIS " + id + " " + portUDP + " " + (char) m + "***");
         return newpl_regis();
     }
-    
+
     /**
-    * Code commun aux fonctions pour les requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
-    */
+     * Code commun aux fonctions pour les requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
+     */
     public static int newpl_regis() {
         String reponse = new String(receiveTCPMessage(5)); // REGNO ou REGOK
         if(reponse.equals("REGNO")) {
@@ -282,11 +284,11 @@ public class Client {
         byte[] regok = receiveTCPMessage(5); // _m***
         return regok[1];
     }
-    
+
     /**
-    * Envoie la requête [UNREG***] au serveur
-    * @return le numéro de la partie quittée, ou -1 si la requête a échouée
-    */
+     * Envoie la requête [UNREG***] au serveur
+     * @return le numéro de la partie quittée, ou -1 si la requête a échouée
+     */
     public static int unreg() {
         sendTCPMessage("UNREG***");
         String reponse = new String(receiveTCPMessage(5));
@@ -303,19 +305,19 @@ public class Client {
         return unrok[1];
         
     }
-    
+
     /**
-    * Envoie la requête [SIZE?_m***] au serveur
-    * @param m le numéro de partie demandé
-    * @return un tableau au format {m, h, w} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant. Renvoie null si la partie m n'existe pas.
-    */
+     * Envoie la requête [SIZE?_m***] au serveur
+     * @param m le numéro de partie demandé
+     * @return un tableau au format {m, h, w} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant. Renvoie null si la partie m n'existe pas.
+     */
     public static int[] size(int m) {
         if(0 > m || m > 255) {
             System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
             return null;
         } 
         sendTCPMessage("SIZE? " + (char) m + "***");
-        
+
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
             receiveTCPMessage(3); // lis les "***" restantes
@@ -325,7 +327,7 @@ public class Client {
             System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
-        
+
         // Réponse attendue : [SIZE!_m_h_w***]
         byte[] size = receiveTCPMessage(11); // _m_h_w***
         int m2 = size[1];
@@ -333,12 +335,12 @@ public class Client {
         int w = (size[6] & 0xff) + (size[7] & 0xff) * 0x100;
         return new int[]{m2, h, w};
     }
-    
+
     /**
-    * Envoie la requête [LIST?_m***] au serveur
-    * @param m le numéro de partie demandé
-    * @return un tableau listant les ID des joueurs de la partie m. Renvoie null si la partie m est inexistante.
-    */
+     * Envoie la requête [LIST?_m***] au serveur
+     * @param m le numéro de partie demandé
+     * @return un tableau listant les ID des joueurs de la partie m. Renvoie null si la partie m est inexistante.
+     */
     public static String[] list(int m) {
         if(0 > m || m > 255) {
             System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
@@ -361,44 +363,42 @@ public class Client {
             System.err.println("Réponse reçue inattendue.");
             System.exit(1);
         }
-        
+
         String[] output = new String[s];
         byte[] playr;
         for(int i = 0; i < s; i++) {
             playr = receiveTCPMessage(17);
             output[i] = new String(Arrays.copyOfRange(playr, 6, 14));
         }
-        
+
         return output;
     }
-    
+
     /**
-    * Envoie la requête [START***] au serveur
-    @return un tablea {m, h , w, f,ip ,port id, x, y} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant, f le nombre de fantomes, ip et port le serveur de jeu, id l'id du joueur, x et y les coordonnées du joueur. Renvoie null si la partie n'est pas encore commencée.
-    */
-    public static String[] start() {
+     * Envoie la requête [START***] au serveur
+     * @return renvoie un tableau de tableaux sous la forme [[m, h, w, f, ip, port], [id, x, y]]
+     */
+    public static String[][] start() {
         sendTCPMessage("START***");
         String[] welco = welco();
         if(welco == null) {
-            return new String[0];
+            return null;
         }
         String[] posit = posit();
-        
-        System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
-        System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
+
         communication = new Communication(Integer.parseInt(portUDP));
         commMulticast = new CommMulticast(welco[4], Integer.parseInt(welco[5]));
         t = new Thread(communication);
         t2 = new Thread(commMulticast);
         t.start();
         t2.start();
-        return Stream.of(welco,posit).flatMap(Stream::of).toArray(String[]::new);
+        return new String[][]{welco, posit};
     }
-    
+
     /**
-    * Gestion de la requête [WELCO_m_h_w_f_ip_port***]
-    * @return un tableau de chaînes de charactères type [m, h, w, f, ip, port]
-    */
+     * Gestion de la requête [WELCO_m_h_w_f_ip_port***]
+     * @return un tableau de chaînes de charactères type [m, h, w, f, ip, port]
+     */
     public static String[] welco() {
         String requete = new String(receiveTCPMessage(5));
         if(requete.equals("DUNNO")) {
@@ -417,21 +417,21 @@ public class Client {
         int f = donnees[9];
         String ip = new String(Arrays.copyOfRange(donnees, 11, 26));
         String port = new String(Arrays.copyOfRange(donnees, 27, 31));
-        
+
         for(int i = 0; i < ip.length(); i++) {
             if(ip.charAt(i) == '#') {
                 ip = ip.substring(0, i);
                 break;
             }
         }
-        
+
         return new String[]{String.valueOf(m), String.valueOf(h), String.valueOf(w), String.valueOf(f), ip, port};
     }
-    
+
     /**
-    * Gestion de la requête [POSIT_id_x_y***]
-    * @return un tableau de chaînes de charactères type [id, x, y]
-    */
+     * Gestion de la requête [POSIT_id_x_y***]
+     * @return un tableau de chaînes de charactères type [id, x, y]
+     */
     public static String[] posit() {
         String requete = new String(receiveTCPMessage(5));
         if(!requete.equals("POSIT")) {
@@ -441,27 +441,27 @@ public class Client {
         String donnees = new String(receiveTCPMessage(20));
         return new String[] {donnees.substring(1,9), donnees.substring(10, 13), donnees.substring(14, 17)};
     }
-    
+
     public static void enJeu() {
         // Déclaration des variables
         int choix, n;
         int[] deplacement;
         String destId, fleche = "-", mess;
         String[][] liste_joueurs;
-        
+
         while(true){
             commMulticast.affiche=true;
             communication.affiche=true;
             System.out.print(
-            "\nSélectionnez un choix :\n" +
-            "0-3/ Se déplacer, respectivement, vers le haut, bas, gauche et droite\n" +
-            "4/ Quitter la partie en cours\n" +
-            "5/ Lister les joueurs de la partie\n" +
-            "6/ Envoyer un message privé\n" +
-            "7/ Envoyer un message public\n\n" +
-            "Votre choix : "
+                "\nSélectionnez un choix :\n" +
+                "0-3/ Se déplacer, respectivement, vers le haut, bas, gauche et droite\n" +
+                "4/ Quitter la partie en cours\n" +
+                "5/ Lister les joueurs de la partie\n" +
+                "6/ Envoyer un message privé\n" +
+                "7/ Envoyer un message public\n\n" +
+                "Votre choix : "
             );
-            
+
             // Parsing du choix de l'utilisateur
             try {
                 choix = Integer.parseInt(sc.nextLine());
@@ -473,112 +473,112 @@ public class Client {
                 System.out.println("Choix donné illégal.");
                 continue;
             }
-            
+
             switch(choix){
                 case 0: // [UPMOV_d***]
                 case 1: // [DOMOV_d***]
                 case 2: // [LEMOV_d***]
                 case 3: // [RIMOV_d***]
-                if(choix == 0){
-                    fleche = "^";
-                }    
-                else if(choix == 1) {
-                    fleche = "v";
-                }
-                else if(choix == 2) {
-                    fleche = "<-";
-                }
-                else if(choix == 3) {
-                    fleche = "->";
-                }
-                
-                System.out.print("De combien de cases souhaitez-vous vous déplacer : ");
-                try {
-                    n = Integer.parseInt(sc.nextLine());
-                }
-                catch (NumberFormatException e) {
-                    System.out.println("Veuillez sélectionner un nombre valide.");
+                    if(choix == 0){
+                        fleche = "^";
+                    }    
+                    else if(choix == 1) {
+                        fleche = "v";
+                    }
+                    else if(choix == 2) {
+                        fleche = "<-";
+                    }
+                    else if(choix == 3) {
+                        fleche = "->";
+                    }
+
+                    System.out.print("De combien de cases souhaitez-vous vous déplacer : ");
+                    try {
+                        n = Integer.parseInt(sc.nextLine());
+                    }
+                    catch (NumberFormatException e) {
+                        System.out.println("Veuillez sélectionner un nombre valide.");
+                        break;
+                    }
+                    deplacement = mov(n, choix);
+                    if(deplacement == null) {
+                        System.out.println("Echec de déplacement.");
+
+                    }
+                    System.out.println("Vous vous êtes déplacé effectivement de (" + deplacement[0] + ", " + deplacement[1] + ") vers " + fleche);
+                    if(deplacement[2] != -1) {
+                        System.out.println("Vous avez attrapé un fantôme ! Votre score est de " + deplacement[2]);
+                    }
                     break;
-                }
-                deplacement = mov(n, choix);
-                if(deplacement == null) {
-                    System.out.println("Echec de déplacement.");
-                    
-                }
-                System.out.println("Vous vous êtes déplacé effectivement de (" + deplacement[0] + ", " + deplacement[1] + ") vers " + fleche);
-                if(deplacement[2] != -1) {
-                    System.out.println("Vous avez attrapé un fantôme ! Votre score est de " + deplacement[2]);
-                }
-                break;
                 case 4: // [IQUIT***]
-                if(iquit()) {
-                    commMulticast.arreter();
-                    communication.arreter();
-                    sc.close();
-                    disconnect();
-                    return;
-                }
-                else {
-                    System.out.println("Echec lors de la tentative d'abandon de la partie.");
-                }
-                break;
-                
+                    if(iquit()) {
+                        commMulticast.arreter();
+                        communication.arreter();
+                        sc.close();
+                        disconnect();
+                        return;
+                    }
+                    else {
+                        System.out.println("Echec lors de la tentative d'abandon de la partie.");
+                    }
+                    break;
+
                 case 5: // [GLIS?***]
-                liste_joueurs = glis();
-                if(liste_joueurs == null) {
-                    System.out.println("La partie est terminée !");
-                    return;
-                }
-                System.out.println("Le lobby est composé de " + liste_joueurs.length + " joueurs");
-                for(int i = 0; i < liste_joueurs.length; i++) {
-                    System.out.println("Joueur " + liste_joueurs[i][0] + " se situant dans (" + liste_joueurs[i][1] + ", " + liste_joueurs[i][2] + ") avec pour score " + liste_joueurs[i][3] + ".");
-                }
-                break;
+                    liste_joueurs = glis();
+                    if(liste_joueurs == null) {
+                        System.out.println("La partie est terminée !");
+                        return;
+                    }
+                    System.out.println("Le lobby est composé de " + liste_joueurs.length + " joueurs");
+                    for(int i = 0; i < liste_joueurs.length; i++) {
+                        System.out.println("Joueur " + liste_joueurs[i][0] + " se situant dans (" + liste_joueurs[i][1] + ", " + liste_joueurs[i][2] + ") avec pour score " + liste_joueurs[i][3] + ".");
+                    }
+                    break;
                 case 6: // [SEND?_id_mess***]
-                System.out.print("À qui voulez-vous envoyer un message privé : ");
-                destId = sc.nextLine();
-                System.out.print("Entrez le message que vous souhaitez envoyer : ");
-                mess = sc.nextLine();
-                if(send(destId, mess)) {
-                    System.out.println("Message envoyé.");
-                }
-                else {
-                    System.out.println("Erreur lors de l'envoi du message.");
-                }
-                break;
+                    System.out.print("À qui voulez-vous envoyer un message privé : ");
+                    destId = sc.nextLine();
+                    System.out.print("Entrez le message que vous souhaitez envoyer : ");
+                    mess = sc.nextLine();
+                    if(send(destId, mess)) {
+                        System.out.println("Message envoyé.");
+                    }
+                    else {
+                        System.out.println("Erreur lors de l'envoi du message.");
+                    }
+                    break;
                 case 7: // [MALL?_mess***]
-                System.out.print("Entrez le message que vous souhaitez envoyer : ");
-                mess = sc.nextLine();
-                if(mall(mess)) {
-                    System.out.println("Message envoyé.");
-                }
-                else {
-                    System.out.println("Erreur lors de l'envoi du message.");
-                }
-                break;
+                    System.out.print("Entrez le message que vous souhaitez envoyer : ");
+                    mess = sc.nextLine();
+                    if(mall(mess)) {
+                        System.out.println("Message envoyé.");
+                    }
+                    else {
+                        System.out.println("Erreur lors de l'envoi du message.");
+                    }
+                    break;
                 default:
-                System.out.println("Choix donné illégal.");
-                break;
-                
+                    System.out.println("Choix donné illégal.");
+                    break;
+
             } 
         }
     }
-    
+
     /**
-    * Envoie une requête de déplacement [..MOV_d***] au serveur
-    * @param d valeur de déplacement souhaité
-    * @param direction 0 -> haut, 1 -> bas, 2 -> gauche, 3 -> droite 
-    * @return {x, y, p} où x et y sont les nouvelles coordonnées du joueur, et p son nouveau score s'il a touché un fantôme - sinon -1 -
-    */
+     * Envoie une requête de déplacement [..MOV_d***] au serveur
+     * @param d valeur de déplacement souhaité
+     * @param direction 0 -> haut, 1 -> bas, 2 -> gauche, 3 -> droite 
+     * @return {x, y, p} où x et y sont les nouvelles coordonnées du joueur, et p son nouveau score s'il a touché un fantôme - sinon -1 -
+     */
     public static int[] mov(int d, int direction) { 
         if(d > 999 || 1 > d) {
             System.err.println("La valeur de déplacement doit être comprise entre 1 et 999.");
             return null;
         }
-        
+
         // Déclaration des variables
         String coordonnees, d_string, p, reponse, requete, x, y;
-        
+
         // Transformation de d en chaîne de charactères de taille 3
         if(d < 10) {
             d_string = "00" + d;
@@ -593,7 +593,7 @@ public class Client {
             System.err.println("Valeur de déplacement illégale.");
             return null;
         }
-        
+
         // Formation de la requête basée sur la direction
         if(direction == 0) {
             requete = "UP";
@@ -611,18 +611,18 @@ public class Client {
             System.err.println("Valeur de direction illégale.");
             return null;
         }
-        
+    
         // Envoi de la requête [..MOV_d***]
         requete += "MOV " + d_string + "***";
         sendTCPMessage(requete);
-        
+
         // Vérification de la légalité de la réponse du serveur
         reponse = new String(receiveTCPMessage(5));
         if(!reponse.equals("MOVEF") && !reponse.equals("MOVE!")) {
             System.err.println("Requête inattendue.");
             System.exit(1);
         }
-        
+
         // Parsing des réponses [MOVE!_x_y**] et [MOVEF_x_y_p***]
         coordonnees = new String(receiveTCPMessage(16));
         x = coordonnees.substring(1, 4);
@@ -633,29 +633,29 @@ public class Client {
         p = coordonnees.substring(9, 12);
         return new int[]{Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(p)};
     }
-    
+
     /**
-    * Envoie la requête [IQUIT***] au serveur
-    * @return true si le serveur répond par conséquent, sinon false
-    */
+     * Envoie la requête [IQUIT***] au serveur
+     * @return true si le serveur répond par conséquent, sinon false
+     */
     public static boolean iquit() {
         sendTCPMessage("IQUIT***");
         return new String(receiveTCPMessage(8)).equals("GOBYE***");
     }
-    
+
     /**
-    * Envoie la requête [GLIS?***] au serveur
-    * @return un tableau composé de tableaux de type [id, x, y, p] où id désigne l'id du joueur, x et y ses coordonnées et p son score. La fonction renvoie null si la partie est finie lorsque ce message est envoyé.
-    */
+     * Envoie la requête [GLIS?***] au serveur
+     * @return un tableau composé de tableaux de type [id, x, y, p] où id désigne l'id du joueur, x et y ses coordonnées et p son score. La fonction renvoie null si la partie est finie lorsque ce message est envoyé.
+     */
     public static String[][] glis() {
         // Déclaration des variables
         int s;
         String gplyr, id, x, y, p;
         String[][] output;
-        
+
         // Envoi de la requête [GLIS?***]
         sendTCPMessage("GLIS?***");
-        
+
         // Vérification de la légalité de la réponse du serveur
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("GOBYE")) {
@@ -667,10 +667,10 @@ public class Client {
             System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
-        
+
         // Parsing de la reponse [GLIS!_s***]
         s = receiveTCPMessage(5)[1];
-        
+
         // Réception des réponses [GPLYR_id_x_y_p***]
         output = new String[s][4];
         for (int i = 0; i < s; i++) {
@@ -683,12 +683,12 @@ public class Client {
         }
         return output;
     }
-    
+
     /**
-    * Envoie la requête [SEND?_id_mess***] au serveur
-    * @param id id du destinaire
-    * @param mess message à envoyer
-    * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
+     * Envoie la requête [SEND?_id_mess***] au serveur
+     * @param id id du destinaire
+     * @param mess message à envoyer
+     * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
     */
     public static boolean send(String id, String mess) {
         if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {
@@ -702,12 +702,12 @@ public class Client {
         sendTCPMessage("SEND? " + id + " " + mess + "***");
         return new String(receiveTCPMessage(8)).equals("SEND!***");
     }
-    
+
     /**
-    * Envoie la requête [MALL?_mess***] au serveur
-    * @param mess message à envoyer
-    * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
-    */
+     * Envoie la requête [MALL?_mess***] au serveur
+     * @param mess message à envoyer
+     * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
+     */
     public static boolean mall(String mess) {
         if(mess.length() > 200 || mess.contains("***") || mess.contains("+++")) {
             System.err.println("Le message envoyé ne doit pas contenir la chaîne \"+++\" ou \"***\", et doit être de longueur inférieure à 200.");
@@ -716,7 +716,7 @@ public class Client {
         sendTCPMessage("MALL? " + mess + "***");
         return new String(receiveTCPMessage(8)).equals("MALL!***");
     }
-    
+
     public static void connect(String adresse) {
         try {
             socket = new Socket(adresse, port);
@@ -752,7 +752,7 @@ public class Client {
         }
         return data;
     }
-    
+
     public static void sendTCPMessage(String message) {
         out.print(message);
         out.flush();

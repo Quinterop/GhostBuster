@@ -812,7 +812,7 @@ Player* get_first_player(Player* info_joueur)
     for(uint8_t i = 0; i < 255; i++)
     {
         if(parties[info_joueur -> m].joueurs[i] != NULL)
-        {
+        { 
             return parties[info_joueur -> m].joueurs[i];
         }
     }
