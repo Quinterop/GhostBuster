@@ -250,12 +250,12 @@ public class Laby{
             String[] buttons = {"START", "SE DESINSCRIRE"};
             int choice = JOptionPane.showOptionDialog(frame, message, "inscrit", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, buttons, buttons[0]);
             if(choice == 0){
-                String[] params = Client.start();
-                int h = Integer.parseInt(params[1]);
-                int w = Integer.parseInt(params[2]);
-                int x = Integer.parseInt(params[7]);
-                int y = Integer.parseInt(params[8]);
-                int nbf = Integer.parseInt(params[3]);
+                String[][] params = Client.start();
+                int h = Integer.parseInt(params[0][1]);
+                int w = Integer.parseInt(params[0][2]);
+                int x = Integer.parseInt(params[1][1]);
+                int y = Integer.parseInt(params[1][2]);
+                int nbf = Integer.parseInt(params[0][3]);
                 genLaby(h, w, x, y, nbf);
                 showLaby();
             }else{
