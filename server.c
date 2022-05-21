@@ -35,8 +35,11 @@ void avant_partie(Player* info_joueur){
             deconnexion(info_joueur);
             return;
         }
-        message[read_size + 1] = '\0';
-        printf("Requête reçue : %s\n", message);
+        message[read_size] = '\0';
+        printf("Requête reçue (taille %d) : %s\n", read_size, message);
+        for(int i = 0; i < read_size; i++) {
+            printf("Caractère %d = '%c'", i, message[i]);
+        }
 
         if(strcmp(message, "NEWPL") == 0) // [NEWPL_id_port***]
         {
