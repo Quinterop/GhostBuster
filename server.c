@@ -239,29 +239,49 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
         printf("Test réussi.\n");
         
         pthread_mutex_lock(&verrou);
+        printf("Test réussi.\n");
         n++;
+        printf("Test réussi.\n");
         strcpy(parties[m].ip, ip);
+        printf("Test réussi.\n");
         strcpy(parties[m].port, port_multicast);
+        printf("Test réussi.\n");
         parties[m].saddr = first_info_multicast -> ai_addr;
+        printf("Test réussi.\n");
         parties[m].etat = 1;
+        printf("Test réussi.\n");
         parties[m].f = FANTOMES_DEFAUT;
+        printf("Test réussi.\n");
         parties[m].l = LARGEUR_DEFAUT;
+        printf("Test réussi.\n");
         parties[m].h = HAUTEUR_DEFAUT;
+        printf("Test réussi.\n");
         pthread_mutex_unlock(&verrou);
+        printf("Test réussi.\n");
     }
     
     // Attribution des valeurs aux informations du joueur
+    printf("Test réussi.\n");
     info_joueur -> etat = 1;
+    printf("Test réussi.\n");
     strcpy(info_joueur -> id, id);
+    printf("Test réussi.\n");
     strcpy(info_joueur -> port, port);
+    printf("Test réussi.\n");
     info_joueur -> i = j;
+    printf("Test réussi.\n");
     info_joueur -> m = m;
+    printf("Test réussi.\n");
     info_joueur -> sock_udp = sock_udp;
+    printf("Test réussi.\n");
     info_joueur -> saddr = saddr;
-
+    printf("Test réussi.\n");
     pthread_mutex_lock(&verrou);
+    printf("Test réussi.\n");
     parties[info_joueur -> m].s += 1;
+    printf("Test réussi.\n");
     pthread_mutex_unlock(&verrou);
+    printf("Test réussi.\n");
 
     printf("Etat de la partie %u : %u\nNombre de joueurs dans la partie : %u.\n", m, parties[i].etat, parties[info_joueur -> m].s);
 
