@@ -46,8 +46,9 @@ public class Client {
 
     public static void avantPartie() {
         // Déclaration des variables
-        int choix, m, n;
+        int choix, h, m, n, w;
         int[][] ogame;
+        String[][] start;
 
         // Réception des messages [GAMES_n***] et [OGAME_m_s***] envoyés en connexion au serveur.
         ogame = get_game();
@@ -64,14 +65,15 @@ public class Client {
                 "4/ Demander la taille d'un lobby\n" +
                 "5/ Lister les joueurs d'un lobby\n" +
                 "6/ Lister les lobbys rejoignables\n" +
-                "7/ Commencer la partie\n\n" +
+                "7/ Commencer la partie\n" +
+                "8/ Modifier la taille d'une partie\n\n" +
                 "Votre choix : "
             );
 
             // Parsing du choix de l'utilisateur
             try {
                 choix = Integer.parseInt(sc.nextLine());
-                if(0 > choix || choix > 7) {
+                if(0 > choix || choix > 8) {
                     throw new IllegalArgumentException();
                 }
             }  
@@ -160,7 +162,7 @@ public class Client {
                     }
                     break;
                 case 7: // [START***]
-                    String[][] start = start();
+                    start = start();
                     if(start == null) {
                         System.out.println("Erreur lors de la tentative de début de partie");
                         break;
@@ -168,6 +170,26 @@ public class Client {
                     System.out.println("Bienvenue dans la partie numéro " + start[0][0] + " qui a pour hauteur " + start[0][1] + " cases pour largeur " + start[0][2] + " cases ainsi que " + start[0][3] + " fantômes et dont l'ip est " + start[0][4] + " et le port est " + start[0][5] +
                     "\nVous êtes positonné dans les coordonnées (" + start[1][1] + ", " + start[1][2] + ").");
                     return;
+                case 8: // [CHSIZE_m_h_w***]
+                    try {
+                        System.out.print("Sélectionnez le numéro de la partie : ");
+                        m = Integer.parseInt(sc.nextLine());
+                        System.out.print("Sélectionnez une hauteur : ");
+                        h = Integer.parseInt(sc.nextLine());
+                        System.out.print("Sélectionnez une largeur : ");
+                        w = Integer.parseInt(sc.nextLine());
+                    } 
+                    catch (NumberFormatException e) {
+                        System.out.println("Veuillez entrer un nombre.");
+                        break;
+                    }
+                    if(chsize(m, h, w)) {
+                        System.out.println("La partie " + m + " est désormais de hauteur/largeur " + h + "/" + w + ".");
+                    }
+                    else {
+                        System.out.println("Erreur lors de l'attribution de la taille de la partie.");
+                    }
+                    break;
                 default:
                     System.out.println("Choix donné illégal.");
                     break;
@@ -375,6 +397,27 @@ public class Client {
     }
 
     /**
+     * Envoie la requête [CHSIZE_m_h_w***] au serveur
+     * @return true si la requête a effectivement changé la taille d'un labyrinthe, false sinon
+     */
+    public static boolean chsize(int m, int h, int w) {
+        if(0 > m || m > 255) {
+            System.err.println("Le numéro de partie doit être compris entre 0 et 255.");
+            return false;
+        }
+        if(1 > h || h > 1000 || 1 > w || w > 1000) {
+            System.err.println("La hauteur/largeur doit être comprise entre 1 et 999.");
+            return false;
+        }
+        m = m & 0xff;
+        String requete_string = "CHSIZ m " + String.format("%03d", h) + " " +  String.format("%03d", w) + "***";
+        byte[] requete = requete_string.getBytes();
+        requete[6] = (byte) m;
+        sendTCPMessage(requete);
+        return new String(receiveTCPMessage(10)).substring(0, 5).equals("REGOK");
+    }
+
+    /**
      * Envoie la requête [START***] au serveur
      * @return renvoie un tableau de tableaux sous la forme [[m, h, w, f, ip, port], [id, x, y]]
      */
@@ -559,7 +602,6 @@ public class Client {
                 default:
                     System.out.println("Choix donné illégal.");
                     break;
-
             } 
         }
     }

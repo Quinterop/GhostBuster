@@ -73,6 +73,10 @@ void avant_partie(Player* info_joueur){
             read(info_joueur -> sock_tcp, buffer, 3); // ***
             games(info_joueur);
         }
+        else if(strcmp(message, "CHSIZ") == 0)
+        {
+            chsize(info_joueur);
+        }
         else
         {
             perror("Requête reçue inattendue (attendu : [NEWPL_id_port***]/[REGIS_id_port_m***]/[START***]/[UNREG***]/[SIZE?_m***]/[LIST?_m***]/[GAME?***]).\n");
@@ -239,7 +243,6 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
         strcpy(parties[m].port, port_multicast);
         parties[m].saddr = first_info_multicast -> ai_addr;
         parties[m].etat = 1;
-        parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
         pthread_mutex_unlock(&verrou);
     }
     
@@ -385,6 +388,47 @@ void list(Player* info_joueur)
     }
 }
 
+void chsize(Player* info_joueur)
+{
+    char buffer[3];
+    uint8_t m;
+    uint16_t h, w;
+    char h_string[4], w_string[4];
+
+    // Réception de la requête [CHSIZ_m_h_w***]
+    read(info_joueur -> sock_tcp, buffer, 1); // _
+    read(info_joueur -> sock_tcp, &m, sizeof(uint8_t)); // m
+    read(info_joueur -> sock_tcp, buffer, 1); // _
+    read(info_joueur -> sock_tcp, h_string, 3); // h
+    read(info_joueur -> sock_tcp, buffer, 1); // _
+    read(info_joueur -> sock_tcp, w_string, 3); // w
+    read(info_joueur -> sock_tcp, buffer, 3); // ***
+    h_string[3] = '\0', w_string[3] = '\0';
+    h = atoi(h_string);
+    w = atoi(w_string);
+
+    // Vérification de la légalité de la demande
+    if(parties[m].etat != 1 || 1 > h || h > 1000 || 1 > w || w > 1000)
+    {
+        // Envoi du message [REGNO***]
+        regno(info_joueur);
+        return;
+    }
+
+    parties[m].h = h;
+    parties[m].l = w;
+    
+    char regok[10] = "REGOK m***";
+    memcpy(regok + 6, &m, sizeof(uint8_t)); // m
+    if(write(info_joueur -> sock_tcp, regok, 10) == -1)
+    {
+        perror("Erreur lors de l'envoi du message [REGOK m***].\n");
+        return;
+    }
+    printf("La partie %u a maintenant pour hauteur %u et pour largeur %u.\n", m, h, w);
+    
+}
+
 void welco(Player* info_joueur)
 {
     // Envoi du message [WELCO_m_h_w_f_ip_port***]
@@ -401,6 +445,11 @@ void welco(Player* info_joueur)
         return;
     }
     printf("Message [WELCO_m_h_w_f_ip_port***] envoyé au joueur (m = %u, h = %u, w = %u, f = %u, ip = %s, port = %s).\n", info_joueur -> m, parties[info_joueur -> m].h, parties[info_joueur -> m].l, parties[info_joueur -> m].f, parties[info_joueur -> m].ip, parties[info_joueur -> m].port);
+
+    if(info_joueur == get_first_player(info_joueur)) 
+    {
+        parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
+    }
 
     // Définition de la position x et y de départ du joueur dans le labyrinthe
     char x_string[4], y_string[4];

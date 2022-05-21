@@ -42,6 +42,7 @@ struct lobby
     char* port; // port de multi-diffusion
     int sock; // socket de multi-diffusion
     int** plateau; // plateau de jeu
+    int** fantomes; // tableau des fantomes
     Player* joueurs[255]; // tableau des joueurs
     struct sockaddr* saddr;
     uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
@@ -59,6 +60,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis);
 void unreg(Player* info_joueur);
 void size(Player* info_joueur);
 void list(Player* info_joueur);
+void chsize(Player* info_joueur);
 void welco(Player* info_joueur);
 void regno(Player* info_joueur);
 void dunno(Player* info_joueur);
