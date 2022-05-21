@@ -614,7 +614,6 @@ void move(char d, Player* info_joueur){
     send(info_joueur -> sock_tcp, mess_send, 16, 0);
 }
 
-
 void gobye(Player* info_joueur)
 {
     // Envoi du message [GOBYE***]

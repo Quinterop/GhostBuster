@@ -16,8 +16,8 @@
 #define HAUTEUR_DEFAUT 6
 #define FANTOMES_DEFAUT 6
 
-#define ESPACE_VIDE '0'
-#define MUR '1'
+#define ESPACE_VIDE 1
+#define MUR 0
 #define JOUEUR 2
 #define FANTOME 3
 
