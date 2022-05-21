@@ -389,7 +389,6 @@ void welco(Player* info_joueur)
 
     if(info_joueur == get_first_player(info_joueur))
     {
-        // TODO: appeller avec la ligne de commande le générateur
         parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
     }
 
@@ -455,7 +454,7 @@ void partie_en_cours(Player* info_joueur)
     // Réception du message
     while(1)
     {
-        printf("En attente d'une requête [UPMOV_d***], [DOMOV_d***], [LEMOV_d***], [RIMOV_d***], [IQUIT***], [GLIS?***], [MALL?_mess***], [SEND?_id_mess***].\n");
+        printf("\nEn attente d'une requête [UPMOV_d***], [DOMOV_d***], [LEMOV_d***], [RIMOV_d***], [IQUIT***], [GLIS?***], [MALL?_mess***], [SEND?_id_mess***].\n");
         read_size = read(info_joueur -> sock_tcp, message, 5);
         if(read_size<=0) 
         {
@@ -467,19 +466,19 @@ void partie_en_cours(Player* info_joueur)
 
         if(strcmp(message, "UPMOV") == 0) // [UPMOV_d***]
         {
-            // fait quelque chose
+            move('U', info_joueur);
         }
         else if(strcmp(message, "DOMOV") == 0) // [DOMOV_d***]
         {
-            // fait quelque chose
+            move('D', info_joueur);
         }
         else if(strcmp(message, "LEMOV") == 0) // [LEMOV_d***]
         {
-            // fait quelque chose
+            move('L', info_joueur);
         }
         else if(strcmp(message, "RIMOV") == 0) // [RIMOV_d***]
         {
-            // fait quelque chose
+            move('R', info_joueur);
         }
         else if(strcmp(message, "IQUIT") == 0) // [IQUIT***]
         {

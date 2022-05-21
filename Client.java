@@ -426,7 +426,7 @@ public class Client {
                 "4/ Quitter la partie en cours\n" +
                 "5/ Lister les joueurs de la partie\n" +
                 "6/ Envoyer un message privé\n" +
-                "7/ Envoyer un message public\n" +
+                "7/ Envoyer un message public\n\n" +
                 "Votre choix : "
             );
 
@@ -623,7 +623,7 @@ public class Client {
         }
 
         // Parsing de la reponse [GLIS!_s***]
-        s = receiveTCPMessage(5)[2];
+        s = receiveTCPMessage(5)[1];
 
         // Réception des réponses [GPLYR_id_x_y_p***]
         output = new String[s][4];

@@ -12,8 +12,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define LARGEUR_DEFAUT 6
-#define HAUTEUR_DEFAUT 6
+#define LARGEUR_DEFAUT 16
+#define HAUTEUR_DEFAUT 16
 #define FANTOMES_DEFAUT 6
 
 #define ESPACE_VIDE 1
