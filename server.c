@@ -678,8 +678,7 @@ void mall(Player* info_joueur)
 
     // Envoi du message [MESSA_id_mess+++] en multicast
     char messa[219];
-    sprintf(messa, "MESSA %s %s+++",info_joueur->id, mess);
-    printf("%s",messa);
+    sprintf(messa, "MESSA %s %s+++", info_joueur -> id, mess);
     if(sendto(parties[info_joueur -> m].sock, messa, strlen(messa), 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
     {
         perror("Erreur lors de l'envoi en multicast du message [MESSA_id_mess+++].\n");
@@ -782,15 +781,15 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
         uint16_to_len_str(x_string, x, 3);
         uint16_to_len_str(y_string, y, 3);
 
-        // Envoi du message [GHOST_x_y_+++] en multicast 
+        // Envoi du message [GHOST_x_y+++] en multicast 
         memcpy(ghost + 6, x_string, strlen(x_string));
         memcpy(ghost + 10, y_string, strlen(y_string));
-        if(sendto(info_joueur -> sock_udp, ghost, 16, 0, info_joueur -> saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
+        if(sendto(parties[info_joueur -> m].sock, ghost, 16, 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
         {
             perror("Erreur lors de l'envoi en multicast du message [GHOST_x_y_+++].\n");
             return;
         }
-        printf("Message [GHOST_x_y_+++] envoyé en multicast.\n");
+        printf("Message [GHOST_x_y_+++] envoyé en multicast (x = %s, y = %s).\n", x_string, y_string);
     }
 }
 
