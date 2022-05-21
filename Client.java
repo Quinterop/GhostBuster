@@ -52,6 +52,7 @@ public class Client {
 
         // Réception des messages [GAMES_n***] et [OGAME_m_s***] envoyés en connexion au serveur.
         ogame = get_game();
+        System.out.println("Il y a " + ogame.length + " partie(s) courante(s).");
         for(int i = 0; i < ogame.length; i++) {
             System.out.println("La partie numéro " + ogame[i][0] + " a " + ogame[i][1] + " joueurs.");
         }
@@ -495,7 +496,8 @@ public class Client {
         while(true){
             commMulticast.affiche=true;
             communication.affiche=true;
-            System.out.print(
+            
+            System.out.println(
                 "\nSélectionnez un choix :\n" +
                 "0-3/ Se déplacer, respectivement, vers le haut, bas, gauche et droite\n" +
                 "4/ Quitter la partie en cours\n" +

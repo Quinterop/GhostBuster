@@ -77,7 +77,7 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur);
 int is_lobby_ready(uint8_t m);
 Player* get_first_player(Player* info_joueur);
 Player* get_winner(Player* info_joueur);
-void reset_game(uint8_t m);
+void deconnexion(Player* info_joueur);
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
 int** parse_txt(char* filename);
 void tostrtmp(char* dest, uint16_t nombre);

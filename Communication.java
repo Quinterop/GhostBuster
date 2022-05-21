@@ -46,7 +46,7 @@ public class Communication implements Runnable{
                 String user=reçu.substring(6,14);
                 String message=reçu.substring(15,reçu.length()-3);
                 //while(!affiche){}
-                System.out.println(user+": "+message);
+                System.out.println(user + " vous dit : \"" + message + "\"");
                // affiche=false;
             }
             return;
