@@ -20,6 +20,9 @@ public class Client {
     private static Scanner sc = new Scanner(System.in);
     private static Communication communication;
     private static CommMulticast commMulticast;
+    private static Thread t = new Thread(communication);
+    private static Thread t2 = new Thread(commMulticast);
+    private static boolean isOver = false;
     
     
     public static void main(String[] args) {
@@ -541,14 +544,18 @@ public class Client {
                     System.out.println("adresse multicast: "+ip);
                     int port = Integer.parseInt(start[1]);
                     System.out.println("port multicast: "+port);
-                    communication =new Communication(Integer.parseInt(portUdp));
-                    commMulticast =new CommMulticast(ip,port);
-                    Thread t = new Thread(communication);
-                    Thread t2 = new Thread(commMulticast);
+                    communication = new Communication(Integer.parseInt(portUdp));
+                    commMulticast = new CommMulticast(ip,port);
+                    t = new Thread(communication);
+                    t2 = new Thread(commMulticast);
                     t.start();
                     t2.start();
                     isOk = true;
                     enJeu();
+                    if(isOver){
+                        System.out.println("partie terminée");
+                        System.exit(0);
+                    }
                 break;
                 default:
                     System.out.println("Veuillez suivre les instructions");
@@ -573,6 +580,8 @@ public class Client {
         System.out.println("id : "+id+" position : x="+x+" y="+y);
         boolean fin = false;
         while(!fin){
+            commMulticast.affiche=true;
+            communication.affiche=true;
             System.out.println("choisissez une action");
             System.out.println("se déplacer: Haut/Bas/Gauche/Droite -> 0/1/2/3");
             System.out.println("quitter la partie: 4");
@@ -787,8 +796,14 @@ public class Client {
                     byte[] prem = receiveTCPMessage(8);
                     System.out.println(new String(prem));
                     fin=true;
-                    launcher();
-                    break;
+                    disconnect();
+                    commMulticast.terminate=true;
+                    communication.terminate=true;
+                    t.interrupt();
+                    t2.interrupt();
+                    sc.close();
+                    isOver=true;
+                    return;
                 }
                 case 5:{
                     System.out.println("liste des joueurs");
@@ -870,7 +885,7 @@ public class Client {
         }
     }
     
-    public void disconnect() {
+    public static void disconnect() {
         try {
             // Close the input stream
             in.close();

@@ -92,6 +92,8 @@ void avant_partie_aux(Player* info_joueur){
 
 void games(Player* info_joueur)
 {
+    printf("TEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSTTTTT\n");
+    printf("Nombre de parties : %u\n", n);
     // Envoi du message [GAMES_n***]
     char games[10] = "GAMES n***";
     memcpy(games + 6, &n, sizeof(uint8_t));
@@ -104,6 +106,7 @@ void games(Player* info_joueur)
 
     // Envoi du/des message(s) [OGAME_m_s***]
     char ogame[12] = "OGAME m s***";
+    printf("Etat partie 0: %d\n", parties[0].etat);
     for(uint8_t i = 0; i < 255; i++)
     {
         if(parties[i].etat == 1)
@@ -232,8 +235,11 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
             printf("Test de la disponibilité de l'adresse IP multicast \"%s\" avec le port %s...\n", ip, port_multicast);
         } while(getaddrinfo(ip, port_multicast, &hints_multicast, &first_info_multicast) != 0);
         printf("Test réussi.\n");
-        
+        printf("Nombre de parties avant : %u\n", n);
+        pthread_mutex_lock(&verrou);
         n++;
+        pthread_mutex_unlock(&verrou);
+        printf("Nombre de parties après : %u\n", n);
         strcpy(parties[info_joueur->m].ip, ip);
         strcpy(parties[info_joueur->m].port, port_multicast);
         parties[info_joueur->m].saddr = first_info_multicast -> ai_addr;
@@ -248,7 +254,7 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     parties[info_joueur->m].s += 1;
     pthread_mutex_unlock(&verrou);
 
-    printf("i=%d\n", i);
+    printf("NOMBRE DE PARTIES : %u\n", n);
 
     printf("Nombre de joueurs dans la partie %u: %u\n",info_joueur->m, parties[info_joueur->m].s);
 
@@ -283,7 +289,9 @@ void unreg(Player* info_joueur)
     {
         printf("La partie %u est supprimée.\n", info_joueur -> m);
         resetGame(info_joueur -> m);
+        /*pthread_mutex_lock(&verrou);
         n--;
+        pthread_mutex_unlock(&verrou);*/
     }
 
     // Envoi du message [UNROK_m***]
@@ -435,6 +443,9 @@ void dunno(Player* info_joueur)
 void partie_en_cours(Player* info_joueur)
 {
     parties[info_joueur -> m].etat = 2;
+    pthread_mutex_lock(&verrou);
+    n--;
+    pthread_mutex_unlock(&verrou);
 
     char buffer[3], message[6];
     int read_size;
@@ -476,14 +487,13 @@ void partie_en_cours(Player* info_joueur)
             if(parties[info_joueur -> m].s == 0)
             {
                 resetGame(info_joueur -> m);
-                n--;
                 printf("La partie est terminée, il n'y a plus aucuns joueurs dedans.\n");
             }
             else
             {
                 printf("Le joueur %s a quitté la partie.\n", info_joueur -> id);
             }
-            avant_partie_aux(info_joueur);
+            close(info_joueur -> sock_tcp);
             return;
         }
         else if(strcmp(message, "GLIS?") == 0) // [GLIS?***]
