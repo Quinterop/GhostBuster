@@ -251,7 +251,7 @@ public class Client {
             System.out.println("Le numéro de port UDP doit être compris entre 1024 et 8191.");
             return -1;
         }
-        sendTCPMessage("NEWPL " + id + " " + portUDP + "***");
+        sendTCPMessage(new String("NEWPL " + id + " " + portUDP + "***").getBytes());
         return newpl_regis();
     }
 

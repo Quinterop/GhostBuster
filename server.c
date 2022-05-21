@@ -36,7 +36,6 @@ void avant_partie(Player* info_joueur){
             return;
         }
         message[read_size + 1] = '\0';
-        message = htons(message);
         printf("Requête reçue : %s\n", message);
 
         if(strcmp(message, "NEWPL") == 0) // [NEWPL_id_port***]
