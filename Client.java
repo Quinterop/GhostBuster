@@ -511,8 +511,16 @@ public class Client {
                 case 6: // [SEND?_id_mess***]
                     System.out.print("À qui voulez-vous envoyer un message privé : ");
                     destId = sc.nextLine();
+                    if(destId.length() != 8 && destId.matches("^.*[^a-zA-Z0-9 ].*$")) {
+                        System.out.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
+                        break;
+                    }
                     System.out.print("Entrez le message que vous souhaitez envoyer : ");
                     mess = sc.nextLine();
+                    if(mess.length() > 200) {
+                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères)."));
+                        break;
+                    }
                     if(send(destId, mess)) {
                         System.out.println("Message envoyé.");
                     }
@@ -523,6 +531,10 @@ public class Client {
                 case 7: // [MALL?_mess***]
                     System.out.print("Entrez le message que vous souhaitez envoyer : ");
                     mess = sc.nextLine();
+                    if(mess.length() > 200) {
+                        System.out.println("Message trop long, la taille maximale est de 200 caractères (" + mess.length() + " caractères)."));
+                        break;
+                    }
                     if(mall(mess)) {
                         System.out.println("Message envoyé.");
                     }
@@ -727,7 +739,7 @@ public class Client {
     public static String recieveUdpMessage() {
         try {
             DatagramSocket dso = new DatagramSocket(port);
-            byte[]data = new byte[maxReadUDP];
+            byte[] data = new byte[maxReadUDP];
             DatagramPacket paquet = new DatagramPacket(data,data.length);
             dso.receive(paquet);
             String st = new String(paquet.getData(), 0, paquet.getLength());
