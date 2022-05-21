@@ -414,7 +414,7 @@ public class Client {
         // Déclaration des variables
         int choix, n;
         int[] deplacement;
-        String destId, fleche, mess;
+        String destId, fleche = "-", mess;
         String[][] liste_joueurs;
 
         while(true){
@@ -444,13 +444,21 @@ public class Client {
 
             switch(choix){
                 case 0: // [UPMOV_d***]
-                    fleche = "^";
                 case 1: // [DOMOV_d***]
-                    fleche = "v";
                 case 2: // [LEMOV_d***]
-                    fleche = "<-";
                 case 3: // [RIMOV_d***]
-                    fleche = "->";
+                    if(choix == 0){
+                        fleche = "^";
+                    }    
+                    else if(choix == 1) {
+                        fleche = "v";
+                    }
+                    else if(choix == 2) {
+                        fleche = "<-";
+                    }
+                    else if(choix == 3) {
+                        fleche = "->";
+                    }
 
                     System.out.print("De combien de cases souhaitez-vous vous déplacer : ");
                     try {
@@ -572,7 +580,7 @@ public class Client {
 
         // Vérification de la légalité de la réponse du serveur
         reponse = new String(receiveTCPMessage(5));
-        if(!reponse.equals("MOVEF") || !reponse.equals("MOVE!")) {
+        if(!reponse.equals("MOVEF") && !reponse.equals("MOVE!")) {
             System.err.println("Requête inattendue.");
             System.exit(1);
         }
@@ -628,7 +636,7 @@ public class Client {
         // Réception des réponses [GPLYR_id_x_y_p***]
         output = new String[s][4];
         for (int i = 0; i < s; i++) {
-            gplyr = new String(receiveTCPMessage(29));
+            gplyr = new String(receiveTCPMessage(30));
             id = gplyr.substring(6, 14);
             x = gplyr.substring(15, 18);
             y = gplyr.substring(19, 22);

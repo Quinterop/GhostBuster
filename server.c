@@ -445,6 +445,7 @@ void dunno(Player* info_joueur)
 void partie_en_cours(Player* info_joueur)
 {
     parties[info_joueur -> m].etat = 2;
+    strcpy(info_joueur -> p, "000");
 
     deplacer_fantomes_aleatoirement(info_joueur);
 
