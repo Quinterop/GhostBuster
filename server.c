@@ -217,6 +217,8 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     
     // Attribution du joueur dans la liste de joueurs de la partie
     for(j = 0; parties[m].joueurs[j] != NULL; j++) {}
+    info_joueur -> i = j;
+    printf("Joueur %d inscrit dans la partie %d.\n", j, m);
     parties[m].joueurs[j] = info_joueur;
 
     // Attribution des valeurs par défaut s'il s'agit d'une nouvelle partie
@@ -458,11 +460,11 @@ void dunno(Player* info_joueur)
 void partie_en_cours(Player* info_joueur)
 {
     parties[info_joueur -> m].etat = 2;
-    Player* first_player = get_first_player(info_joueur);
-
-    if(info_joueur -> i == 0){
+    //Player* first_player = get_first_player(info_joueur);
+    printf("joueur numero %d\n", info_joueur -> i);
+    //if(info_joueur -> i == 0){
         deplacer_fantomes_aleatoirement(info_joueur);
-    }
+    //}
     
 
     char buffer[3], message[6];
@@ -785,32 +787,40 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
 {
     uint16_t x, y;
     char x_string[4], y_string[4], ghost[100];
-    for(uint16_t i = 0; i < parties[info_joueur -> m].f; i++)
-    {
-        do
+    pthread_mutex_lock(&verrou);
+    if(info_joueur == get_first_player(info_joueur)){
+        for(uint16_t i = 0; i < parties[info_joueur -> m].f; i++)
         {
-            x = rand() % parties[info_joueur -> m].l;
-            y = rand() % parties[info_joueur -> m].h;
-        } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
-        parties[info_joueur -> m].plateau[x][y] = FANTOME;
-        //uint16_to_len_str(x_string, x, 3);
-        //uint16_to_len_str(y_string, y, 3);
-        tostrtmp(x_string, x);
-        tostrtmp(y_string, y);
+            
+            do
+            {
+                x = rand() % parties[info_joueur -> m].l;
+                y = rand() % parties[info_joueur -> m].h;
+            } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
+            parties[info_joueur -> m].plateau[x][y] = FANTOME;
+            //uint16_to_len_str(x_string, x, 3);
+            //uint16_to_len_str(y_string, y, 3);
+            tostrtmp(x_string, x);
+            tostrtmp(y_string, y);
 
-        // Envoi du message [GHOST_x_y_+++] en multicast 
-        //memcpy(ghost + 6, x_string, strlen(x_string));
-        //memcpy(ghost + 10, y_string, strlen(y_string));
-        //ghost[16] = '\0';
-        sprintf(ghost, "GHOST %s %s+++", x_string, y_string);
-        //printf("Message [GHOST_%s_%s_+++] envoyé au joueur.\n", x_string, y_string);
-        printf("TTTEEEEESSSSTTTT %s\n",ghost);
-        if(sendto(parties[info_joueur -> m].sock, ghost, 16, 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
-        {
-            perror("Erreur lors de l'envoi en multicast du message [GHOST_x_y_+++].\n");
-            return;
+            // Envoi du message [GHOST_x_y_+++] en multicast 
+            //memcpy(ghost + 6, x_string, strlen(x_string));
+            //memcpy(ghost + 10, y_string, strlen(y_string));
+            //ghost[16] = '\0';
+            sprintf(ghost, "GHOST %s %s+++", x_string, y_string);
+            
+            
+
+            if(send_multicast(info_joueur, ghost, strlen(ghost)) == -1)
+            {
+                pthread_mutex_unlock(&verrou);
+                perror("Erreur lors de l'envoi en multicast du message [GHOST_x_y+++].\n");
+                return;
+            }
+            printf("Message [GHOST_x_y+++] envoyé en multicast.\n");
         }
-        printf("Message [GHOST_x_y_+++] envoyé en multicast.\n");
+        pthread_mutex_unlock(&verrou);
+        printf("Fantômes déplacés aléatoirement.\n");
     }
 }
 
@@ -987,6 +997,9 @@ int** parse_txt(char* filename)
     return lines;
 }
 
+int send_multicast(Player* info_joueur, char* message, int len){
+    return sendto(parties[info_joueur -> m].sock, message, len, 0, parties[info_joueur -> m].saddr, (socklen_t) sizeof(struct sockaddr_in));
+}
 
 int main(int argc, char* argv[])
 {

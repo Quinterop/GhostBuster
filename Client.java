@@ -364,14 +364,16 @@ public class Client {
     public static void start() {
         sendTCPMessage("START***");
         String[] welco = welco();
-        String[] posit = posit();
-
-        System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
-        System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
         commMulticast = new CommMulticast(welco[4], Integer.parseInt(welco[5]));
         t2 = new Thread(commMulticast);
         t.start();
         t2.start();
+        String[] posit = posit();
+
+        System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
+        System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
+        
+        
     }
 
     /**
