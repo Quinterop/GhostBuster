@@ -53,22 +53,33 @@ public class CommMulticast implements Runnable{
                 byte[] buffer = new byte[218];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
-                String reçu = new String(packet.getData(), 0, packet.getLength());
-                if(reçu.length()>16){
-                    user=reçu.substring(6,14);
-                    message=reçu.substring(15,reçu.length()-3);
+                String recu = new String(packet.getData(), 0, packet.getLength());
+                if(recu.substring(0, 6).equals("SCORE")){
+                    user=recu.substring(6,14);
+                    message=recu.substring(15,recu.length()-3);
+                    while(!affiche){}
+                    System.out.println("Le joueur "+user+" a capturé un fantome !");
+                    System.out.println("Ce dernier se cachait en x = "+message.substring(20,23)+" y = "+message.substring(24,27));
+                    System.out.println(user+" a maintenant "+message.substring(16,19)+" points !");
+                    affiche=false;
                 }
                 else{
-                    message=reçu.substring(0,reçu.length()-3);
+                    if(recu.length()>16){
+                        user=recu.substring(6,14);
+                        message=recu.substring(15,recu.length()-3);
+                    }
+                    else{
+                        message=recu.substring(0,recu.length()-3);
+                    }
+                    //while(!affiche){}
+                    if(user.equals("")){
+                        System.out.println(message);
+                    }
+                    else{
+                        System.out.println(user+": "+message);
+                    }
                 }
-                //while(!affiche){}
-                if(user.equals("")){
-                    System.out.println(message);
-                }
-                else{
-                    System.out.println(user+": "+message);
-                }
-                //affiche=false;
+                    //affiche=false;
             }
             return;
         }

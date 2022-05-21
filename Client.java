@@ -369,7 +369,7 @@ public class Client {
         String[] posit = posit();
 
         System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
-        System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
+        System.out.println("Vous êtes positonné dans les coordonnées (x: " + posit[1] + ", y:" + posit[2] + ").");
         
         
     }
@@ -583,7 +583,7 @@ public class Client {
 
         // Vérification de la légalité de la réponse du serveur
         reponse = new String(receiveTCPMessage(5));
-        if(!reponse.equals("MOVEF") || !reponse.equals("MOVE!")) {
+        if(!reponse.equals("MOVEF") && !reponse.equals("MOVE!")) {
             System.err.println("Requête inattendue.");
             System.exit(1);
         }

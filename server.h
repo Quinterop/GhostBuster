@@ -16,8 +16,8 @@
 #define HAUTEUR_DEFAUT 16
 #define FANTOMES_DEFAUT 6
 
-#define ESPACE_VIDE 1
-#define MUR 0
+#define ESPACE_VIDE 0
+#define MUR 1
 #define JOUEUR 2
 #define FANTOME 3
 
@@ -82,3 +82,4 @@ int** parse_txt(char* filename);
 void tostrtmp(char* dest, uint16_t nombre);
 int send_multicast(Player* info_joueur, char* message, int len);
 int is_port_free(char* port);
+int ghost_captured(Player* info_joueur, uint16_t x, uint16_t y);
