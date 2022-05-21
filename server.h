@@ -46,6 +46,7 @@ struct lobby
     struct sockaddr* saddr;
     uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
     uint8_t f; // nombre de fantomes dans la partie
+    int** fantomes; // tableau des fantomes
     uint8_t s; // nombre de joueurs inscrits
     uint16_t l; // largeur du plateau
     uint16_t h; // hauteur du plateau

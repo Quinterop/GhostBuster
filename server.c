@@ -400,25 +400,36 @@ void welco(Player* info_joueur)
     }
     printf("Message [WELCO_m_h_w_f_ip_port***] envoyé au joueur (m = %u, h = %u, w = %u, f = %u, ip = %s, port = %s).\n", info_joueur -> m, parties[info_joueur -> m].h, parties[info_joueur -> m].l, parties[info_joueur -> m].f, parties[info_joueur -> m].ip, parties[info_joueur -> m].port);
 
+    printf("TEEEESSSTTTT\n");
     if(info_joueur == get_first_player(info_joueur))
     {
         parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
     }
+    printf("OUUUUUUIIIIIIIIIII\n");
 
     // Définition de la position x et y de départ du joueur dans le labyrinthe
     char x_string[4], y_string[4];
     uint16_t x, y;
     do
     {  
+        printf("%u\n", info_joueur -> m);
+        printf("%u\n", parties[0].h);
+        printf("C'EST QUOI LES BAILS ?\n");
         x = rand() % parties[info_joueur -> m].l;
+        printf("%d\n", x);
         y = rand() % parties[info_joueur -> m].h;
+        printf("%d\n", y);
+        printf("WEWEWEWEWEWE\n");
     } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
-    //uint16_to_len_str(x_string, rand() % parties[info_joueur -> m].l, 3);
-    //uint16_to_len_str(y_string, rand() % parties[info_joueur -> m].h, 3);
+
+    printf("hahahahahahaha\n");
     tostrtmp(x_string, x);
     tostrtmp(y_string, y);
     strcpy(info_joueur -> x, x_string);
     strcpy(info_joueur -> y, y_string);
+
+    printf("NOOOOOOOOOOOONNNNNNNN\n");
+
 
     // Envoi du message [POSIT_id_x_y***] 
     char posit[25] = "POSIT id...... x.. y..***"; 
@@ -569,14 +580,14 @@ void move(char d, Player* info_joueur){
             for(uint16_t i = y ; i >= y - depl ; i--) {
                 if(parties[info_joueur -> m].plateau[i - 1][x]==1 || i - 1 < 0) {
                     printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
-                    uint16_to_len_str(stck, i, 3);
+                    tostrtmp(stck, i);
                     strcpy(info_joueur->y, stck);
                     is_move_finished = 0;
                     break;
                 }
             }
             if(is_move_finished) {
-                uint16_to_len_str(stck, y - depl, 3);
+                tostrtmp(stck, y - depl);
                 strcpy(info_joueur -> y, stck);
             }
         break;
@@ -584,14 +595,14 @@ void move(char d, Player* info_joueur){
             for(uint16_t i = y ; i <= y + depl ; i++) {
                 if(parties[info_joueur -> m].plateau[i + 1][x]==1 || i + 1 >= parties[info_joueur -> m].h){
                     printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
-                    uint16_to_len_str(stck, i, 3);
+                    tostrtmp(stck, i);
                     strcpy(info_joueur -> y, stck);
                     is_move_finished = 0;
                     break;
                 }
             }
             if(is_move_finished) {
-                uint16_to_len_str(stck, y + depl, 3);
+                tostrtmp(stck, y + depl);
                 strcpy(info_joueur -> y, stck);
             }
         break;
@@ -599,14 +610,14 @@ void move(char d, Player* info_joueur){
             for(uint16_t i = x ; i >= x - depl ; i--) {
                 if(parties[info_joueur -> m].plateau[y][i - 1]==1 || i - 1 < 0){
                     printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
-                    uint16_to_len_str(stck, i, 3);
+                    tostrtmp(stck, i);
                     strcpy(info_joueur -> x, stck);
                     is_move_finished = 0;
                     break;
                 }
             }
             if(is_move_finished) {
-                uint16_to_len_str(stck, x - depl, 3);
+                tostrtmp(stck, x - depl);
                 strcpy(info_joueur -> x, stck);
             }
         break;
@@ -614,14 +625,14 @@ void move(char d, Player* info_joueur){
             for(uint16_t i = x ; i <= x + depl ; i++) {
                 if(parties[info_joueur -> m].plateau[y][i + 1]==1 || i + 1 >= parties[info_joueur -> m].l){
                     printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
-                    uint16_to_len_str(stck, i, 3);
+                    tostrtmp(stck, i);
                     strcpy(info_joueur -> x, stck);
                     is_move_finished = 0;
                     break;
                 }
             }
             if(is_move_finished) {
-                uint16_to_len_str(stck, x + depl, 3);
+                tostrtmp(stck, x + depl);
                 strcpy(info_joueur -> x, stck);
             }
         break;  
@@ -798,15 +809,13 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
                 y = rand() % parties[info_joueur -> m].h;
             } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
             parties[info_joueur -> m].plateau[x][y] = FANTOME;
-            //uint16_to_len_str(x_string, x, 3);
-            //uint16_to_len_str(y_string, y, 3);
+
+            parties[info_joueur -> m].fantomes[i][0] = x;
+            parties[info_joueur -> m].fantomes[i][1] = y;
+
             tostrtmp(x_string, x);
             tostrtmp(y_string, y);
 
-            // Envoi du message [GHOST_x_y_+++] en multicast 
-            //memcpy(ghost + 6, x_string, strlen(x_string));
-            //memcpy(ghost + 10, y_string, strlen(y_string));
-            //ghost[16] = '\0';
             sprintf(ghost, "GHOST %s %s+++", x_string, y_string);
             
             
@@ -898,6 +907,29 @@ void tostrtmp(char* dest, uint16_t nombre)
     strcpy(dest, newString);
 }
 
+void tostrtmp4(char* dest, int nombre)
+{
+    char newString[5];
+
+    if (nombre<10)
+    {
+        sprintf(newString, "000%d", nombre);
+    }
+    else if (nombre<100)
+    {
+        sprintf(newString, "00%d", nombre);
+    }
+    else if(nombre<1000)
+    {
+        sprintf(newString, "0%d", nombre);
+    }
+    else{
+        sprintf(newString, "%d", nombre);
+    }
+    
+    strcpy(dest, newString);
+}
+
 /*void udp_connect(Player* info_joueur){
     char ip[16], port_multicast[5];
     int sock_udp;
@@ -932,6 +964,7 @@ void initialize_game()
 {
     for(int i=0;i<255;i++)
     {
+        
         parties[i].ip=malloc(sizeof(char)*16);
         
         parties[i].port=malloc(sizeof(char)*5);
@@ -944,6 +977,11 @@ void initialize_game()
         parties[i].saddr=NULL;
         parties[i].etat=0;
         parties[i].f=FANTOMES_DEFAUT;
+        parties[i].fantomes=malloc(sizeof(int) * parties[i].f);
+        for(uint8_t j=0;i<parties[i].f;i++)
+        {
+            parties[i].fantomes[j]=malloc(sizeof(int) * 2);
+        }
         parties[i].s=0;
         parties[i].l=LARGEUR_DEFAUT;
         parties[i].h=HAUTEUR_DEFAUT; 

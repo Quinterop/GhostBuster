@@ -293,7 +293,11 @@ public class Client {
      * @return un tableau au format {m, h, w} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant. Renvoie null si la partie m n'existe pas.
      */
     public static int[] size(int m) {
-        sendTCPMessage("SIZE? " + (char) m + "***");
+        m = m & 0xFF;
+        String sSize = "SIZE? m***";
+        byte[] b = sSize.getBytes();
+        b[6] = (byte) m;
+        sendTCPMessage(b);
 
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
@@ -319,7 +323,11 @@ public class Client {
      * @return un tableau listant les ID des joueurs de la partie m. Renvoie null si la partie m est inexistante.
      */
     public static String[] list(int m) {
-        sendTCPMessage("LIST? " + (char) m + "***");
+        m = m & 0xFF;
+        String sList = "LIST? m***";
+        byte[] b = sList.getBytes();
+        b[6] = (byte) m;
+        sendTCPMessage(b);
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
             receiveTCPMessage(3); // lis les "***" restantes

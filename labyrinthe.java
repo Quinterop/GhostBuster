@@ -29,6 +29,27 @@ public class labyrinthe{
         }
     }
 
+    static void writeInFile(char[][] labyrinthe){
+        String fileName="labyrinthe"+fileId+".txt";
+        fileId++;
+        //File file=new File(fileName);
+        try {
+            FileWriter fileWriter=new FileWriter(fileName);
+            PrintWriter printWriter=new PrintWriter(fileWriter);
+            for(int i=2;i<labyrinthe.length-2;i++){
+                for(int j=2;j<labyrinthe[i].length-2;j++){
+                    printWriter.print(labyrinthe[i][j]);
+                }
+                printWriter.println();
+            }
+            printWriter.close();
+            fileWriter.close();
+        } catch (IOException e) {
+            
+            e.printStackTrace();
+        }
+    }
+
     static char[][] create_maze_grid(int w,int l){
         int length=2*l+4;
         int width=2*w+4;
@@ -400,7 +421,7 @@ public class labyrinthe{
         System.out.println();
     }
 
-    private static void printLab(int[][] lab){
+    /*private static void printLab(int[][] lab){
         for(int i=0;i<lab.length;i++){
             for(int j=0;j<lab[i].length;j++){
                 System.out.print(lab[i][j]);
@@ -408,16 +429,16 @@ public class labyrinthe{
             System.out.println();
         }
         System.out.println();
-    }
+    }*/
 
     public static void main(String[] args) {
         //for(int i=0;i<10;i++){
             LinkedList<Integer> last_direction=new LinkedList<Integer>();
             char[][] maze=create_maze_grid(8,8);
             maze=create_maze_rec(maze,3,3,last_direction);
-            print_maze(maze);
+            //print_maze(maze);
             int[][] maze_int=replaceCharByInt(maze);
-            printLab(maze_int);
+            //printLab(maze_int);
             writeInFile(maze_int);
             //writeInFile(maze);
             //int[][] lab=create_lab_grid(4,4);
