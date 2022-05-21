@@ -33,7 +33,7 @@ public class Client {
             System.err.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
             System.exit(1);
         }
-        if(0 > port || port > 65535) {
+        if(2000 > port || port > 65535) {
             System.err.println("La valeur donnée au port est illégale.");
             System.exit(1);
         }

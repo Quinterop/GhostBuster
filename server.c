@@ -87,7 +87,7 @@ void avant_partie(Player* info_joueur){
     printf("[%s] Le lobby est prêt, la partie va commencer.\n", info_joueur -> id);
     
     welco(info_joueur);
-
+    sleep(5);
     partie_en_cours(info_joueur);
     return;
 }
@@ -205,6 +205,14 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     saddr = first_info -> ai_addr;
     printf("Socket UDP créée.\n");
     
+    if(is_port_free(port) == 0)
+    {
+        // Envoi du message [REGNO***]
+        printf("Le port est déjà utilisé.\n");
+        regno(info_joueur);
+        return;
+    }
+
     // Attribution du joueur dans la liste de joueurs de la partie
     for(j = 0; parties[m].joueurs[j] != NULL; j++) {}
     parties[m].joueurs[j] = info_joueur;
@@ -406,8 +414,8 @@ void welco(Player* info_joueur)
     } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
     pthread_mutex_unlock(&verrou);
 
-    uint16_to_len_str(x_string, rand() % parties[info_joueur -> m].l, 3);
-    uint16_to_len_str(y_string, rand() % parties[info_joueur -> m].h, 3);
+    tostrtmp(x_string, x);
+    tostrtmp(y_string, y);
     strcpy(info_joueur -> x, x_string);
     strcpy(info_joueur -> y, y_string);
 
@@ -454,6 +462,7 @@ void partie_en_cours(Player* info_joueur)
     parties[info_joueur -> m].etat = 2;
     pthread_mutex_unlock(&verrou);
     strcpy(info_joueur -> p, "0000");
+    deplacer_fantomes_aleatoirement(info_joueur);
 
     char buffer[3], message[6];
     int read_size;
@@ -779,16 +788,13 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
     char x_string[4], y_string[4], ghost[16] = "GHOST x.. y..+++";
     for(uint16_t i = 0; i < parties[info_joueur -> m].f; i++)
     {
-        pthread_mutex_lock(&verrou);
         do
         {
             x = rand() % parties[info_joueur -> m].l;
             y = rand() % parties[info_joueur -> m].h;
         } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
-        pthread_mutex_unlock(&verrou);
-        parties[info_joueur -> m].plateau[x][y] = FANTOME;
-        uint16_to_len_str(x_string, x, 3);
-        uint16_to_len_str(y_string, y, 3);
+        tostrtmp(x_string, x);
+        tostrtmp(y_string, y);
 
         // Envoi du message [GHOST_x_y+++] en multicast 
         memcpy(ghost + 6, x_string, strlen(x_string));
@@ -842,6 +848,26 @@ Player* get_winner(Player* info_joueur)
     }
     return gagnant;
 }
+
+void tostrtmp(char* dest, uint16_t nombre)
+{
+    char newString[4];
+
+    if (nombre<10)
+    {
+        sprintf(newString, "00%d", nombre);
+    }
+    else if (nombre<100)
+    {
+        sprintf(newString, "0%d", nombre);
+    }
+    else
+    {
+        sprintf(newString, "%d", nombre);
+    }
+    strcpy(dest, newString);
+}
+
 
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t len)
 {
@@ -927,6 +953,25 @@ int** parse_txt(char* filename)
     return lines;
 }
 
+int is_port_free(char* port) {
+    for(uint16_t i = 0; i < 255; i++)
+    {
+        if(parties[i].etat == 1)
+        {
+            for(uint16_t j = 0 ;j < 255; j++) 
+            {
+                if(parties[i].joueurs[j] != NULL) 
+                {
+                    if(strcmp(parties[i].joueurs[j] -> port, port)==0)
+                    {
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+    return 1;
+}
 
 int main(int argc, char* argv[])
 {

@@ -78,3 +78,5 @@ Player* get_winner(Player* info_joueur);
 void reset_game(uint8_t m);
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
 int** parse_txt(char* filename);
+void tostrtmp(char* dest, uint16_t nombre);
+int is_port_free(char* port);
