@@ -6,864 +6,636 @@ import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class Client {
-    static String pseudo; //8 caractères max
+    private static String id; // 8 caractères max
     private static Socket socket;
     private static BufferedReader in;
     private static PrintWriter out;
     private static DataOutputStream outB;
     private static int port;
     private static int maxReadUDP = 50;
-    private static String portUdp;
+    private static String portUDP;
     private static Scanner sc = new Scanner(System.in);
     private static Communication communication;
     private static CommMulticast commMulticast;
     
     
     public static void main(String[] args) {
-        
-        /* pseudo = args[0];
-        port = Integer.parseInt(args[1]); */
-        pseudo = "remedy12";
-        port = 7778;
-        connect();
-        launcher();
-        
+        // Parsing de la ligne de commande
+        id = args[0];
+        port = Integer.parseInt(args[1]);
+        if(id.length() != 8 && id.matches("^.*[^a-zA-Z0-9 ].*$")) {
+            System.err.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
+            System.exit(1);
+        }
+        if(port > 0 || port > 65535) {
+            System.err.println("La valeur donnée au port est illégale.");
+            System.exit(1);
+        }
+        System.out.println("Ligne de commande parsée.");
 
+        connect("127.0.0.1");
+        avantPartie();
+        enJeu();
     }
-    
-    
-    /*public static void pregame(){
-        System.out.print(
-            "Sélectionnez un choix :\n" +
-            "4/ Quitter la partie en cours\n" +
-            "5/ Demander la taille d'un lobby\n" +
-            "6/ Lister les joueurs d'un lobby\n" +
-            "7/ Lister les lobbys rejoignables\n" +
-            "8 Commencer la partie\n" +
-            "Votre choix : ");
-        int choice = sc.nextInt();
-        sc.nextLine();
-        
-        switch(choice){
-            case 4:
-                System.out.println("quitter partie");
-                sendTCPMessage("UNREG***");
-                byte[] prem = receiveTCPMessage(1);
-                if(prem[0]=='D'){
-                    System.out.println("D"+new String(receiveTCPMessage(8)));
-                }else{
-                    byte[] ok = receiveTCPMessage(9);
-                    int partie = ok[5];
-                    System.out.println("ok quitter "+partie);
-                }
-                pregame();
-                break;
-            case 5:
-                System.out.print("Sélectionnez le numéro de la partie : ");
-                int user_m = sc.nextInt();
-                sendTCPMessage("SIZE? " + (char) user_m + "***");
 
-                String requete = new String(receiveTCPMessage(6));
-                if(requete.equals("DUNNO ")) 
-                {
-                    System.out.println("La partie demandée n'existe pas.");
-                    pregame();
-                }
-                else if(!requete.equals("SIZE! "))
-                {
-                    System.out.println("Requête reçue inattendue.");
-                    pregame();
-                }
+    public static void avantPartie() {
+        // Déclaration des variables
+        int choix, m, n;
+        int[][] ogame;
 
-                // Réponse attendue : [SIZE!_m_h_w***]
-                byte[] m = receiveTCPMessage(1); // m
-                receiveTCPMessage(1); // _
-                byte[] h = receiveTCPMessage(2); // h
-                receiveTCPMessage(1); // _
-                byte[] w = receiveTCPMessage(2); // w
-                receiveTCPMessage(3); // ***
-                int test2 = (w[0] & 0xff) + (w[1] & 0xff) * 0x100;
-                System.out.println(test2);
-                System.out.println("La partie " + (int) m[0] + " a pour hauteur " + (int) ((h[0] & 0xff) + (h[1] & 0xff) * 0x100) + " cases et pour largeur " + (int) ((w[0] & 0xff) + (w[1] & 0xff) * 0x100) + " cases.");
-                pregame();
-            break;
-            case 6:
-            System.out.println("liste de joueurs");
-            System.out.println("quelle partie");
-            int numero2 = sc.nextInt();
-            sendTCPMessage("LIST? "+numero2+"***");
-            pregame();
-            break;
-            case 7:
-            System.out.println("liste des parties nn vides");
-            sendTCPMessage("GAME?***");
-            /*String first = receiveTCPMessage();
-            int nbgames = Integer.valueOf(first);
-            System.out.println(first);
-            for (int i = 0; i < nbgames; i++) {
-                System.out.println(receiveTCPMessage());
-            }
-             pregame();
-            break;
-            case 8:
-            System.out.println("début de partie");
-            sendTCPMessage("START***");
-            
-            //[WELCO␣m␣h␣w␣f␣ip␣port***]
-            /*byte[] start = receiveTCPMessage(24);
-            String mess = new String(start);
-            System.out.println(new String(mess));
-            int partie = start[6];
-            //LIRE HAUTEUR LARGEUR
-            int hauteur = (int) ((start[8] & 0xff) + (start[9] & 0xff) * 0x100);
-            int largeur = (int) ((start[11] & 0xff) + (start[12] & 0xff) * 0x100);
-            int nbFant = start[14]; //A TESTER
-            String ip = mess.substring(13,28);
-            String portString = mess.substring(29,33);
-            int port=Integer.parseInt(portString);
-            String[] start=welc();
-            String ip=start[0];
-            System.out.println("adresse multicast: "+ip);
-            int port=Integer.parseInt(start[1]);
-            System.out.println("port multicast: "+port);
-            communication=new Communication(Integer.parseInt(portUdp));
-            commMulticast=new CommMulticast(ip,port);
-            Thread t = new Thread(communication);
-            Thread t2 = new Thread(commMulticast);
-            t.start();
-            t2.start();
-            //inGame();
-            enJeu();
-            break;
-            default:
-            System.out.println("erreur");
-            break;
+        // Réception des messages [GAMES_n***] et [OGAME_m_s***] envoyés en connexion au serveur.
+        ogame = get_game();
+        for(int i = 0; i < ogame.length; i++) {
+            System.out.println("La partie numéro " + ogame[i][0] + " a " + ogame[i][1] + " joueurs.");
         }
-        sc.close();
-        //System.out.println("la partie a commencé");
-    }*/
-    
-    /*public static void inGame(){
-        //POSIT␣id␣x␣y***
-        byte[] pos = receiveTCPMessage(25);
-        String mess = new String(pos);
-        System.out.println(mess);
-        String id = mess.substring(6,14);
-        int x = Integer.valueOf(mess.substring(15,18));
-        int y = Integer.valueOf(mess.substring(19,22));
-        System.out.println("id : "+id+"position : x : "+x+" y : "+y);
-        //System.out.println("posit : "+posit);
-        
-        
-        System.out.println("0 points");
-        System.out.println("se déplacer ? HBGD-> 0123. 5 pour quitter");
-        System.out.println("liste des joueurs -> 6. chat : privé -> 7. global ->8");
-        Scanner sc = new Scanner(System.in);
-        int choice = sc.nextInt();
-        sc.nextLine();
-        System.out.println("combien de cases ?");
-        int nb = sc.nextInt();
 
+        while(true) {
+            System.out.print(
+                "Sélectionnez un choix :\n" +
+                "1/ Créer une nouvelle partie\n" +
+                "2/ Rejoindre une partie existante\n" +
+                "3/ Quitter la partie en cours\n" +
+                "4/ Demander la taille d'un lobby\n" +
+                "5/ Lister les joueurs d'un lobby\n" +
+                "6/ Lister les lobbys rejoignables\n" +
+                "7/ Commencer la partie\n\n" +
+                "Votre choix : "
+            );
 
-        switch(choice){
-            //MOUVEMENTS
-            case 0:{
-                System.out.println("mouvement haut de "+nb+" cases");
-                String out = "UPMOV "+nb+"***";
-                sendTCPMessage(out);
-                
-                //MOVEF␣x␣y␣p***
-                byte[] prem = receiveTCPMessage(5);
-                if(prem[4]=='E'){
-                    byte[] suite = receiveTCPMessage(3);
-                    String full = new String(prem)+new String(suite);
-                    System.out.println(full);
-                    System.out.println("partie terminée");
+            // Parsing du choix de l'utilisateur
+            try {
+                choix = Integer.parseInt(sc.nextLine());
+                if(0 > choix || choix > 7) {
+                    throw new IllegalArgumentException();
+                }
+            }  
+            catch (IllegalArgumentException | NoSuchElementException | IllegalStateException e) {
+                System.out.println("Choix donné illégal.");
+                continue;
+            }
+
+            switch(choix) {
+                case 1: // [NEWPL_id_port***]
+                    System.out.print("Veuillez entrer un numéro de port UDP : ");
+                    portUDP = sc.nextLine();
+                    if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
+                        System.out.println("Numéro de port illégal.");
+                        break;
+                    }
+                    m = newpl(id, portUDP);
+                    if(m == -1) {
+                        System.out.println("Erreur lors de la création de la nouvelle partie.");
+                        break;          
+                    }
+                    System.out.println("Nouvelle partie numéro " + m + " créée.");
+                    break;
+                case 2: // [REGIS_id_port_m***]
+                    System.out.print("Veuillez entrer un numéro de port UDP : ");
+                    portUDP = sc.nextLine();
+                    if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
+                        System.out.println("Numéro de port illégal.");
+                        break;
+                    }
+                    System.out.print("Sélectionnez le numéro de partie que vous souhaitez rejoindre : ");
+                    n = Integer.parseInt(sc.nextLine());
+                    m = regis(id, portUDP, n);
+                    if(m == -1) {
+                        System.out.println("Erreur lors de la tentative de join la partie citée.");
+                        break;
+                    }
+                    System.out.println("Vous avez rejoins la partie numéro " + m + ".");
+                    break;
+                case 3: // [UNREG***]
+                    m = unreg();
+                    if(m == -1) {
+                        System.out.println("Vous n'avez aucune partie à quitter.");
+                        break;
+                    }
+                    System.out.println("Vous avez quitté la partie numéro " + m + ".");
+                    break;
+                case 4: // [SIZE?_m***]
+                    System.out.print("Sélectionnez le numéro de la partie : ");
+                    m = Integer.parseInt(sc.nextLine());
+                    int[] s = size(m);
+                    if(s == null) {
+                        System.out.println("Erreur lors de la demande de taille de cette partie. Elle peut être inexistante.");
+                        break;
+                    }
+                    System.out.println("La partie " + s[0] + " a pour hauteur " + s[1] + " cases et pour largeur " + s[2] + " cases.");
+                    break;
+                case 5: // [LIST?_m***]
+                    System.out.print("Sélectionnez le numéro de la partie : ");
+                    m = Integer.parseInt(sc.nextLine());
+                    String[] id_list = list(m);
+                    if(id_list == null) {
+                        System.out.println("Erreur lors de la demande de joueurs de cette partie. Elle peut être inexistante.");
+                        break;
+                    }
+
+                    for(int i = 0; i < id_list.length; i++) {
+                        System.out.println("ID : " + id_list[i]);
+                    }
+                    break;
+                case 6: // [GAME?***]
+                    ogame = game();
+                    System.out.println("Nombre de parties : " + ogame.length);
+                    for(int i = 0; i < ogame.length; i++) {
+                        System.out.println("La partie numéro " + ogame[i][0] + " a " + ogame[i][1] + " joueurs.");
+                    }
+                    break;
+                case 7: // [START***]
+                    start();
                     return;
-                }
-                else if(prem[4]=='F'){
-                    System.out.println("fantome attrapé");
-                    byte[] suite = receiveTCPMessage(15);
-                    String full = new String(prem)+new String(suite);
-                    
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    int p = Integer.valueOf(full.substring(14,17));
-                    System.out.println(full);
-                    System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                    
-                }else {
-                    //MOVE!␣x␣y***
-                    byte[] suite = receiveTCPMessage(11);
-                    String full = new String(prem)+new String(suite);
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    System.out.println(full);
-                    System.out.println("position : x : "+x2+" y : "+y2);
-                    
-                }
-            }
-            case 1:{
-                System.out.println("mouvement bas de "+nb+" cases");
-                String out = "DOMOV "+nb+"***";
-                sendTCPMessage(out);
-                
-                //MOVEF␣x␣y␣p***
-                byte[] prem = receiveTCPMessage(5);
-
-                if(prem[4]=='E'){
-                    byte[] suite = receiveTCPMessage(3);
-                    String full = new String(prem)+new String(suite);
-                    System.out.println(full);
-                    System.out.println("partie terminée");
-                    return;
-                }
-                else if(prem[4]=='F'){
-                    System.out.println("fantome attrapé");
-                    byte[] suite = receiveTCPMessage(15);
-                    String full = new String(prem)+new String(suite);
-                    
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    int p = Integer.valueOf(full.substring(14,17));
-                    System.out.println(full);
-                    System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                    
-                }else {
-                    //MOVE!␣x␣y***
-                    byte[] suite = receiveTCPMessage(11);
-                    String full = new String(prem)+new String(suite);
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    System.out.println(full);
-                    System.out.println("position : x : "+x2+" y : "+y2);
-                    
-                }
-            }
-            case 2:{
-                System.out.println("mouvement gauche de "+nb+" cases");
-                String out = "LEMOV "+nb+"***";
-                sendTCPMessage(out);
-                
-                //MOVEF␣x␣y␣p***
-                byte[] prem = receiveTCPMessage(5);
-
-                if(prem[4]=='E'){
-                    byte[] suite = receiveTCPMessage(3);
-                    String full = new String(prem)+new String(suite);
-                    System.out.println(full);
-                    System.out.println("partie terminée");
-                    return;
-                }
-                else if(prem[4]=='F'){
-                    System.out.println("fantome attrapé");
-                    byte[] suite = receiveTCPMessage(15);
-                    String full = new String(prem)+new String(suite);
-                    
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    int p = Integer.valueOf(full.substring(14,17));
-                    System.out.println(full);
-                    System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                    
-                }else {
-                    //MOVE!␣x␣y***
-                    byte[] suite = receiveTCPMessage(11);
-                    String full = new String(prem)+new String(suite);
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    System.out.println(full);
-                    System.out.println("position : x : "+x2+" y : "+y2);
-                    
-                }
-            }
-            case 3:{
-                System.out.println("mouvement droite de "+nb+" cases");
-                String out = "RIMOV "+nb+"***";
-                sendTCPMessage(out);
-                
-                //MOVEF␣x␣y␣p***
-                byte[] prem = receiveTCPMessage(5);
-                if(prem[4]=='E'){
-                    byte[] suite = receiveTCPMessage(3);
-                    String full = new String(prem)+new String(suite);
-                    System.out.println(full);
-                    System.out.println("partie terminée");
-                    return;
-                }
-                else if(prem[4]=='F'){
-                    System.out.println("fantome attrapé");
-                    byte[] suite = receiveTCPMessage(15);
-                    String full = new String(prem)+new String(suite);
-                    
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    int p = Integer.valueOf(full.substring(14,17));
-                    System.out.println(full);
-                    System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                    
-                }else {
-                    //MOVE!␣x␣y***
-                    byte[] suite = receiveTCPMessage(11);
-                    String full = new String(prem)+new String(suite);
-                    int x2 = Integer.valueOf(full.substring(6,9));
-                    int y2 = Integer.valueOf(full.substring(10,13));
-                    System.out.println(full);
-                    System.out.println("position : x : "+x2+" y : "+y2);
-                    
-                }
-            }
-
-
-            case 5:{
-                System.out.println("quitter partie");
-                sendTCPMessage("IQUIT***");
-                byte[] prem = receiveTCPMessage(8);
-                System.out.println(new String(prem));
-                return;
-            }
-            case 6:{
-                System.out.println("liste des joueurs");
-                sendTCPMessage("GLIS?***");
-                byte[] first = receiveTCPMessage(10);
-
-                if(first[4]=='E'){
-                    System.out.println(first);
-                    System.out.println("partie terminée");
-                    return;
-                }
-                 
-                int nbplayers = first[7];
-                System.out.println(new String(first));
-                
-                for (int i = 0; i < nbplayers; i++) {
-                    //GPLYR␣id␣x␣y␣p***
-                    byte[] player = receiveTCPMessage(29);
-                    String mess2 = new String(player);
-                    String id2 = mess2.substring(6,14);
-                    int x2 = Integer.valueOf(mess2.substring(15,18));
-                    int y2 = Integer.valueOf(mess2.substring(19,22));
-                    int p = Integer.valueOf(mess2.substring(23,26));
-                    System.out.println(mess2);
-                    System.out.println("Joueur "+id2+"position : x : "+x2+" y : "+y2+ " points : "+p);
-                }
-                
-                System.out.println("ok liste des joueurs");
-                
-            }
-            case 7:{
-                System.out.println("chat privé");
-                System.out.println("a qui voulez vous envoyer un message ?");
-                String dest = sc.nextLine();
-                System.out.println("message ?");
-                String msg = sc.nextLine();
-                
-            }
-            case 8:{
-                System.out.println("chat global");
-                System.out.println("message ?");
-                String msg = sc.nextLine();
+                default:
+                    System.out.println("Choix donné illégal.");
+                    break;
             }
         }
-        inGame();
-        
-    }*/
-    
+    }
 
-    public static void launcher(){
-        boolean ok = false;
-        System.out.println("AVANT PARTIE");
-        System.out.println("AFFICHAGE DES PARTIES");
-        
+    /**
+     * Envoie la requête [GAME?***] au serveur
+     * @return un tableau de tableaux sous la forme [0: m, 1: s] où m est le numéro de partie et s le nombre de joueurs
+     */
+    public static int[][] game() {
+        sendTCPMessage("GAME?***");
+        return get_game();
+    }
+
+     /**
+     * Reçoit la requête [GAME?***] au serveur
+     * @return un tableau de tableaux sous la forme [0: m, 1: s] où m est le numéro de partie et s le nombre de joueurs
+     */
+    public static int[][] get_game() {
         byte[] first = receiveTCPMessage(10);
         int nbgames = first[6];
-        System.out.println("nbgames"+nbgames);
         
+        int[][] output = new int[nbgames][2];
         for (int i = 0; i < nbgames; i++) {
             
             byte[] gamei = receiveTCPMessage(12);
-            System.out.println("game"+gamei[6]+": "+gamei[8]+" joueurs");
+            output[i] = new int[]{gamei[6], gamei[8]};
         }
-        while(!ok){
-            try {
-                System.out.println("1 : creer une partie");
-                System.out.println("2 : rejoindre une partie");
-                int choice = sc.nextInt();
-                sc.nextLine();
-                switch (choice){
-                    case 1:
-                        System.out.println("Veuillez entrer un port UDP");
-                        portUdp = sc.nextLine();
-                        if(Integer.parseInt(portUdp)<1024 || Integer.parseInt(portUdp)>8191){
-                            System.out.println("port incorrect");
-                            break;
-                        }
-                        System.out.println("creation partie"); 
-                        String mess = "NEWPL " + pseudo + " " + portUdp + "***";
-                        sendTCPMessage(mess);
-                        System.out.println("Message envoyé : " + mess);
 
-                        byte[] reg = (receiveTCPMessage(10));
-                        if(reg[3]=='N'){
-                            System.out.println("echec creer partie");
-                        }else{
-                            ok=true;
-                            System.out.println("partie créee "+reg[6]);
-                        }
-                    break;
-                    case 2:
-                        System.out.println("Veuillez entrer un port UDP");
-                        portUdp = sc.nextLine();
-                        if(Integer.parseInt(portUdp)<1024 || Integer.parseInt(portUdp)>8191){
-                            System.out.println("port incorrect");
-                            break;
-                        }
-                        System.out.println("incription a une partie");
-                        System.out.println("choisir partie");
-                        int n = sc.nextInt(); //mettre sur 1 octet
-                        byte numeropartie = (byte) (n & 0xFF);
-                        String message = ("REGIS "+pseudo+" "+portUdp+" ");
-                        //byte[] messageByte = message.getBytes();
-                        //messageByte[20] = (byte) numeropartie;
-                        sendTCPMessage(message);
-                        sendTCPMessage(new byte[]{numeropartie});
-                        sendTCPMessage("***");
-
-                        byte[] reg2 = (receiveTCPMessage(10));
-                        if(reg2[3]=='N'){
-                            System.out.println("echec rejoindre partie");
-                        }else{
-                            ok=true;
-                            System.out.println("enregistré dans la partie"+reg2[6]);
-                        }
-                    break;
-                    default:
-                        System.out.println("Veuillez suivre les instructions");
-                    break;
-                }  
-            } catch (Exception e) {
-                System.out.println("Veuillez suivre les instructions");
-                continue;
-            }
-            
-        }
-        avantPartie();
+        return output;
     }
 
-    public static void avantPartie(){
-        boolean isOk = false;
-        System.out.println("AVANT PARTIE");
-        while(!isOk){
+    /**
+     * Envoie la requête [NEWPL_id_port***]
+     * @param id l'id du joueur
+     * @param portUDP le port UDP du joueur
+     * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
+     */
+    public static int newpl(String id, String portUDP) {
+        sendTCPMessage("NEWPL " + id + " " + portUDP + "***");
+        return newpl_regis();
+    }
+
+    /**
+     * Envoie la requête [REGIS_id_port_m***]
+     * @param id l'id du joueur
+     * @param portUDP le port UDP du joueur
+     * @param m la partie souhaitée être rejoins
+     * @return l'index m représentation le numéro de partie où s'est inscrit le joueur. Retourne -1 si erreur.
+     */
+    public static int regis(String id, String portUDP, int m) {
+        sendTCPMessage("REGIS " + id + " " + portUDP + " " + (char) m + "***");
+        return newpl_regis();
+    }
+
+    /**
+     * Code commun aux fonctions pour les requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
+     */
+    public static int newpl_regis() {
+        String reponse = new String(receiveTCPMessage(5)); // REGNO ou REGOK
+        if(reponse.equals("REGNO")) {
+            receiveTCPMessage(3); // lis les "***" restantes
+            System.err.println("Échec de création de la partie.");
+            return -1;
+        }
+        if(!reponse.equals("REGOK")) {
+            System.err.println("Requête reçue inattendue.");
+            System.exit(1);
+        }
+        byte[] regok = receiveTCPMessage(5); // _m***
+        return regok[1];
+    }
+
+    /**
+     * Envoie la requête [UNREG***] au serveur
+     * @return le numéro de la partie quittée, ou -1 si la requête a échouée
+     */
+    public static int unreg() {
+        sendTCPMessage("UNREG***");
+        String reponse = new String(receiveTCPMessage(5));
+        if(reponse.equals("DUNNO")) {
+            System.err.println("Inscrit à aucune partie.");
+            return -1;
+        }
+        if(!reponse.equals("REGOK")) {
+            System.err.println("Requête reçue inattendue.");
+            System.exit(1);
+        }
+        byte[] regok = receiveTCPMessage(9);
+        return regok[5];
+        
+    }
+
+    /**
+     * Envoie la requête [SIZE?_m***] au serveur
+     * @param m le numéro de partie demandé
+     * @return un tableau au format {m, h, w} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant. Renvoie null si la partie m n'existe pas.
+     */
+    public static int[] size(int m) {
+        sendTCPMessage("SIZE? " + m + "***");
+
+        String reponse = new String(receiveTCPMessage(5));
+        if(reponse.equals("DUNNO")) {
+            return null;
+        }
+        else if(!reponse.equals("SIZE!")) {
+            throw new IllegalArgumentException();
+        }
+
+        // Réponse attendue : [SIZE!_m_h_w***]
+        byte[] size = receiveTCPMessage(11); // _m_h_w***
+        int m2 = size[1];
+        int h = (size[3] & 0xff) + (size[4] & 0xff) * 0x100;
+        int w = (size[6] & 0xff) + (size[7] & 0xff) * 0x100;
+        return new int[]{m2, h, w};
+    }
+
+    /**
+     * Envoie la requête [LIST?_m***] au serveur
+     * @param m le numéro de partie demandé
+     * @return un tableau listant les ID des joueurs de la partie m. Renvoie null si la partie m est inexistante.
+     */
+    public static String[] list(int m) {
+        sendTCPMessage("LIST? " + (char) m + "***");
+        if(new String(receiveTCPMessage(5)).equals("DUNNO")) {
+            return null;
+        }
+        byte[] list = receiveTCPMessage(7);
+        int m2 = list[1];
+        int s = list[3];
+        if(m2 != m) {
+            System.err.println("Réponse reçue inattendue.");
+            System.exit(1);
+        }
+
+        String[] output = new String[s];
+        byte[] playr;
+        for(int i = 0; i < s; i++) {
+            playr = receiveTCPMessage(17);
+            output[i] = new String(Arrays.copyOfRange(playr, 6, 14));
+        }
+
+        return output;
+    }
+
+    /**
+     * Envoie la requête [START***] au serveur
+     */
+    public static void start() {
+        sendTCPMessage("START***");
+        String[] welco = welco();
+        String[] posit = posit();
+
+        System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
+        System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
+        communication = new Communication(Integer.parseInt(portUDP));
+        commMulticast = new CommMulticast(welco[4], Integer.parseInt(welco[5]));
+        Thread t = new Thread(communication);
+        Thread t2 = new Thread(commMulticast);
+        t.start();
+        t2.start();
+    }
+
+    /**
+     * Gestion de la requête [WELCO_m_h_w_f_ip_port***]
+     * @return un tableau de chaînes de charactères type [m, h, w, f, ip, port]
+     */
+    public static String[] welco() {
+        String requete = new String(receiveTCPMessage(5));
+        if(requete.equals("DUNNO")) {
+            System.err.println("La partie demandée n'existe pas.");
+            return null;
+        }
+        else if(!requete.equals("WELCO")) {
+            System.err.println("Requête reçue inattendue.");
+            System.exit(1);
+        }
+        byte[] donnees = receiveTCPMessage(33); // _m_h_w_f_ip_port***
+        int m = donnees[1];
+        int h = (donnees[3] & 0xff) + (donnees[4] & 0xff) * 0x100;
+        int w = (donnees[6] & 0xff) + (donnees[7] & 0xff) * 0x100;
+        int f = donnees[9];
+        String ip = new String(Arrays.copyOfRange(donnees, 11, 26));
+        String port = new String(Arrays.copyOfRange(donnees, 27, 31));
+
+        for(int i = 0; i < ip.length(); i++) {
+            if(ip.charAt(i) == '#') {
+                ip = ip.substring(0, i);
+                break;
+            }
+        }
+
+        return new String[]{String.valueOf(m), String.valueOf(h), String.valueOf(w), String.valueOf(f), ip, port};
+    }
+
+    /**
+     * Gestion de la requête [POSIT_id_x_y***]
+     * @return un tableau de chaînes de charactères type [id, x, y]
+     */
+    public static String[] posit() {
+        String requete = new String(receiveTCPMessage(5));
+        if(!requete.equals("POSIT")) {
+            System.err.println("Requête inattendue.");
+            System.exit(1);
+        }
+        String donnees = new String(receiveTCPMessage(20));
+        return new String[] {donnees.substring(1,9), donnees.substring(10, 13), donnees.substring(14, 17)};
+    }
+
+    public static void enJeu() {
+        // Déclaration des variables
+        int choix, n;
+        int[] deplacement;
+        String destId, fleche, mess;
+        String[][] liste_joueurs;
+
+        while(true){
             System.out.print(
                 "Sélectionnez un choix :\n" +
-                "1/ Quitter la partie en cours\n" +
-                "2/ Demander la taille d'un lobby\n" +
-                "3/ Lister les joueurs d'un lobby\n" +
-                "4/ Lister les lobbys rejoignables\n" +
-                "5/ Commencer la partie\n" +
-            "Votre choix : ");
-            int choice = sc.nextInt();
-            sc.nextLine();
+                "0-3/ Se déplacer, respectivement, vers le haut, bas, gauche et droite\n" +
+                "4/ Quitter la partie en cours\n" +
+                "5/ Lister les joueurs de la partie\n" +
+                "6/ Envoyer un message privé\n" +
+                "7/ Envoyer un message public\n" +
+                "Votre choix : "
+            );
+
+            // Parsing du choix de l'utilisateur
             try {
-                switch(choice){
-                case 1:
-                    System.out.println("quitter partie");
-                    sendTCPMessage("UNREG***");
-                    byte[] prem = receiveTCPMessage(1);
-                    if(prem[0]=='D'){
-                        System.out.println("D"+new String(receiveTCPMessage(8)));
-                    }else{
-                        byte[] ok = receiveTCPMessage(9);
-                        int partie = ok[5];
-                        System.out.println("ok quitter "+partie);
-                        isOk=true;
-                        launcher();
-                    }
-                    break;
-                case 2:
-                    System.out.print("Sélectionnez le numéro de la partie : ");
-                    int user_m = sc.nextInt();
-                    sendTCPMessage("SIZE? " + (char) user_m + "***");
-
-                    String requete = new String(receiveTCPMessage(6));
-                    if(requete.equals("DUNNO ")) 
-                    {
-                        System.out.println("La partie demandée n'existe pas.");
-                        break;
-                    }
-                    else if(!requete.equals("SIZE! "))
-                    {
-                        System.out.println("Requête reçue inattendue.");
-                        break;
-                    }
-
-                    // Réponse attendue : [SIZE!_m_h_w***]
-                    byte[] m = receiveTCPMessage(1); // m
-                    receiveTCPMessage(1); // _
-                    byte[] h = receiveTCPMessage(2); // h
-                    receiveTCPMessage(1); // _
-                    byte[] w = receiveTCPMessage(2); // w
-                    receiveTCPMessage(3); // ***
-                    int test2 = (w[0] & 0xff) + (w[1] & 0xff) * 0x100;
-                    System.out.println(test2);
-                    System.out.println("La partie " + (int) m[0] + " a pour hauteur " + (int) ((h[0] & 0xff) + (h[1] & 0xff) * 0x100) + " cases et pour largeur " + (int) ((w[0] & 0xff) + (w[1] & 0xff) * 0x100) + " cases.");
-                    
-                break;
-                case 3:
-                    System.out.println("liste de joueurs");
-                    System.out.println("quelle partie");
-                    int numero2 = sc.nextInt();
-                    byte b = (byte) (numero2 & 0xff);
-                    //System.out.println(Integer.toBinaryString(numero2));
-                    sc.nextLine();
-                    sendTCPMessage("LIST? ");
-                    sendTCPMessage(new byte[]{ b });
-                    sendTCPMessage("***");
-
-                break;
-                case 4:
-                    System.out.println("liste des parties non vides");
-                    sendTCPMessage("GAME?***");
-                    /*String first = receiveTCPMessage();
-                    int nbgames = Integer.valueOf(first);
-                    System.out.println(first);
-                    for (int i = 0; i < nbgames; i++) {
-                        System.out.println(receiveTCPMessage());
-                    }
-                    */
-                    break;
-                case 5:
-                    System.out.println("début de partie");
-                    sendTCPMessage("START***");
-                    String[] start = welc();
-                    String ip = start[0];
-                    System.out.println("adresse multicast: "+ip);
-                    int port = Integer.parseInt(start[1]);
-                    System.out.println("port multicast: "+port);
-                    communication =new Communication(Integer.parseInt(portUdp));
-                    commMulticast =new CommMulticast(ip,port);
-                    Thread t = new Thread(communication);
-                    Thread t2 = new Thread(commMulticast);
-                    t.start();
-                    t2.start();
-                    isOk = true;
-                    enJeu();
-                break;
-                default:
-                    System.out.println("Veuillez suivre les instructions");
-                break;
-            }
-            } catch (Exception e) {
-                System.out.println("Veuillez suivre les instructions");
+                choix = Integer.parseInt(sc.nextLine());
+                if(0 > choix || choix > 7) {
+                    throw new IllegalArgumentException();
+                }
+            }  
+            catch (IllegalArgumentException | NoSuchElementException | IllegalStateException e) {
+                System.out.println("Veuillez suivre les instructions.");
                 continue;
             }
-            
-        }
-    }
 
-    public static void enJeu(){
-        //POSIT␣id␣x␣y***
-        byte[] pos = receiveTCPMessage(25);
-        String mess = new String(pos);
-        System.out.println(mess);
-        String id = mess.substring(6,14);
-        int x = Integer.valueOf(mess.substring(15,18));
-        int y = Integer.valueOf(mess.substring(19,22));
-        System.out.println("id : "+id+" position : x="+x+" y="+y);
-        boolean fin = false;
-        while(!fin){
-            System.out.println("choisissez une action");
-            System.out.println("se déplacer: Haut/Bas/Gauche/Droite -> 0/1/2/3");
-            System.out.println("quitter la partie: 4");
-            System.out.println("liste des joueurs: 5");
-            System.out.println("chat: privé/général -> 6/7");
-            int choice = sc.nextInt();
-            sc.nextLine();
+            switch(choix){
+                case 0: // [UPMOV_d***]
+                    fleche = "^";
+                case 1: // [DOMOV_d***]
+                    fleche = "v";
+                case 2: // [LEMOV_d***]
+                    fleche = "<-";
+                case 3: // [RIMOV_d***]
+                    fleche = "->";
 
-            switch(choice){
-                //MOUVEMENTS
-                case 0:{
-                    System.out.println("combien de cases ?");
-                    int nb = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("mouvement haut de "+nb+" cases");
-                    String out = "UPMOV "+nb+"***";
-                    sendTCPMessage(out);
-                    
-                    //MOVEF␣x␣y␣p***
-                    byte[] prem = receiveTCPMessage(5);
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
+                    System.out.print("De combien de cases souhaitez-vous vous déplacer : ");
+                    try {
+                        n = Integer.parseInt(sc.nextLine());
+                        if(n > 999 || 1 > n) {
+                            throw new IllegalArgumentException();
+                        }
                     }
-                    else if(prem[4]=='F'){
-                        System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
-                        String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
-                        System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                        
-                    }else {
-                        //MOVE!␣x␣y***
-                        byte[] suite = receiveTCPMessage(11);
-                        String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2);
-                        
+                    catch (IllegalArgumentException e) {
+                        System.out.println("Veuillez sélectionner un nombre valide compris entre 1 et 999.");
+                        break;
                     }
-                break;
-                }
-                case 1:{
-                    System.out.println("combien de cases ?");
-                    int nb = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("mouvement bas de "+nb+" cases");
-                    String out = "DOMOV "+nb+"***";
-                    sendTCPMessage(out);
-                    
-                    //MOVEF␣x␣y␣p***
-                    byte[] prem = receiveTCPMessage(5);
-
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
-                        System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
-                        String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
-                        System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                        
-                    }else {
-                        //MOVE!␣x␣y***
-                        byte[] suite = receiveTCPMessage(11);
-                        String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2);
-                        
-                    }
-                break;
-                }
-                case 2:{
-                    System.out.println("combien de cases ?");
-                    int nb = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("mouvement gauche de "+nb+" cases");
-                    String out = "LEMOV "+nb+"***";
-                    sendTCPMessage(out);
-                    
-                    //MOVEF␣x␣y␣p***
-                    byte[] prem = receiveTCPMessage(5);
-
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
-                        System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
-                        String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
-                        System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                        
-                    }else {
-                        //MOVE!␣x␣y***
-                        byte[] suite = receiveTCPMessage(11);
-                        String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2);
-                        
-                    }
-                break;
-                }
-                case 3:{
-                    System.out.println("combien de cases ?");
-                    int nb = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("mouvement droite de "+nb+" cases");
-                    String out = "RIMOV "+nb+"***";
-                    sendTCPMessage(out);
-                    
-                    //MOVEF␣x␣y␣p***
-                    byte[] prem = receiveTCPMessage(5);
-                    if(prem[4]=='E'){
-                        byte[] suite = receiveTCPMessage(3);
-                        String full = new String(prem)+new String(suite);
-                        System.out.println(full);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    else if(prem[4]=='F'){
-                        System.out.println("fantome attrapé");
-                        byte[] suite = receiveTCPMessage(15);
-                        String full = new String(prem)+new String(suite);
-                        
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        int p = Integer.valueOf(full.substring(14,17));
-                        System.out.println(full);
-                        System.out.println("fantome attrapé points : "+p+"position : x : "+x2+" y : "+y2);
-                        
-                    }else {
-                        //MOVE!␣x␣y***
-                        byte[] suite = receiveTCPMessage(11);
-                        String full = new String(prem)+new String(suite);
-                        int x2 = Integer.valueOf(full.substring(6,9));
-                        int y2 = Integer.valueOf(full.substring(10,13));
-                        System.out.println(full);
-                        System.out.println("position : x : "+x2+" y : "+y2); 
-                    }
-                break;
-                }
-                case 4:{
-                    System.out.println("quitter partie");
-                    sendTCPMessage("IQUIT***");
-                    byte[] prem = receiveTCPMessage(8);
-                    System.out.println(new String(prem));
-                    fin=true;
-                    launcher();
-                    break;
-                }
-                case 5:{
-                    System.out.println("liste des joueurs");
-                    sendTCPMessage("GLIS?***");
-                    byte[] first = receiveTCPMessage(10);
-
-                    if(first[4]=='E'){
-                        System.out.println(first);
-                        System.out.println("partie terminée");
-                        return;
-                    }
-                    
-                    int nbplayers = first[7];
-                    System.out.println(new String(first));
-                    
-                    for (int i = 0; i < nbplayers; i++) {
-                        //GPLYR␣id␣x␣y␣p***
-                        byte[] player = receiveTCPMessage(29);
-                        String mess2 = new String(player);
-                        String id2 = mess2.substring(6,14);
-                        int x2 = Integer.valueOf(mess2.substring(15,18));
-                        int y2 = Integer.valueOf(mess2.substring(19,22));
-                        int p = Integer.valueOf(mess2.substring(23,26));
-                        System.out.println(mess2);
-                        System.out.println("Joueur "+id2+"position : x : "+x2+" y : "+y2+ " points : "+p);
-                    }
-                    
-                    System.out.println("ok liste des joueurs");
-                    break;
-                }
-                case 6:{
-                    System.out.println("Chat privé");
-                    System.out.println("A qui voulez vous envoyer un message ?");
-                    String dest = sc.nextLine();
-                    System.out.println("Que voulez vous envoyer ?");
-                    String msg = sc.nextLine();
-                    String out = "SEND? "+dest+" "+msg+"***";
-                    sendTCPMessage(out);
-                    String recep = new String(receiveTCPMessage(8));
-                    if(recep.equals("SEND!***")){
-                        System.out.println("Message envoyé");
-                    }else{
-                        System.out.println("Erreur lors de l'envoi du message");
+                    deplacement = mov(n, choix);
+                    System.out.println("Vous vous êtes déplacé effectivement de (" + deplacement[0] + ", " + deplacement[1] + ") vers " + fleche);
+                    if(deplacement[2] != -1) {
+                        System.out.println("Vous avez attrapé un fantôme ! Votre score est de " + deplacement[2]);
                     }
                     break;
-                }
-                case 7:{
-                    System.out.println("Chat global");
-                    System.out.println("Que voulez vous envoyer ?");
-                    String msg = sc.nextLine();
-                    String out = "MALL? "+msg+"***";
-                    sendTCPMessage(out);
-                    String recep = new String(receiveTCPMessage(8));
-                    if(recep.equals("MALL!***")){
-                        System.out.println("Message envoyé");
-                    }else{
-                        System.out.println("Erreur lors de l'envoi du message");
+                case 4: // [IQUIT***]
+                    if(iquit()) {
+                        return;
+                    }
+                    else {
+                        System.out.println("Echec lors de la tentative d'abandon de la partie.");
                     }
                     break;
-                }
+
+                case 5: // [GLIS?***]
+                    liste_joueurs = glis();
+                    if(liste_joueurs == null) {
+                        System.out.println("La partie est terminée !");
+                        return;
+                    }
+                    System.out.println("Le lobby est composé de " + liste_joueurs.length + " joueurs");
+                    for(int i = 0; i < liste_joueurs.length; i++) {
+                        System.out.println("Joueur " + liste_joueurs[i][0] + " se situant dans (" + liste_joueurs[i][1] + ", " + liste_joueurs[i][2] + ") avec pour score " + liste_joueurs[i][3] + ".");
+                    }
+                    break;
+                case 6: // [SEND?_id_mess***]
+                    System.out.print("À qui voulez-vous envoyer un message privé : ");
+                    destId = sc.nextLine();
+                    System.out.print("Entrez le message que vous souhaitez envoyer : ");
+                    mess = sc.nextLine();
+                    if(send(destId, mess)) {
+                        System.out.println("Message envoyé.");
+                    }
+                    else {
+                        System.out.println("Erreur lors de l'envoi du message.");
+                    }
+                    break;
+                case 7: // [MALL?_mess***]
+                    System.out.print("Entrez le message que vous souhaitez envoyer : ");
+                    mess = sc.nextLine();
+                    if(mall(mess)) {
+                        System.out.println("Message envoyé.");
+                    }
+                    else {
+                        System.out.println("Erreur lors de l'envoi du message.");
+                    }
+                    break;
             } 
         }
     }
 
-    public static void connect() {
+    /**
+     * Envoie une requête de déplacement [..MOV_d***] au serveur
+     * @param d valeur de déplacement souhaité
+     * @param direction 0 -> haut, 1 -> bas, 2 -> gauche, 3 -> droite 
+     * @return {x, y, p} où x et y sont les nouvelles coordonnées du joueur, et p son nouveau score s'il a touché un fantôme - sinon -1 -
+     */
+    public static int[] mov(int d, int direction) { 
+        // Déclaration des variables
+        String coordonnees, d_string, p, reponse, requete, x, y;
+
+        // Transformation de d en chaîne de charactères de taille 3
+        if(d < 10) {
+            d_string = "00" + d;
+        }
+        else if(d < 100) {
+            d_string = "0" + d;
+        }
+        else if(d < 1000) {
+            d_string = String.valueOf(d);
+        }
+        else {
+            System.err.println("Valeur de déplacement illégale.");
+            return null;
+        }
+
+        // Formation de la requête basée sur la direction
+        if(direction == 0) {
+            requete = "UP";
+        }
+        else if(direction == 1) {
+            requete = "DO";
+        }
+        else if(direction == 2) {
+            requete = "LE";
+        }
+        else if(direction == 3) {
+            requete = "RI";
+        }
+        else {
+            System.err.println("Valeur de direction illégale.");
+            return null;
+        }
+    
+        // Envoi de la requête [..MOV_d***]
+        requete += "MOV " + d_string + "***";
+        sendTCPMessage(requete);
+
+        // Vérification de la légalité de la réponse du serveur
+        reponse = new String(receiveTCPMessage(5));
+        if(!reponse.equals("MOVEF") || !reponse.equals("MOVE!")) {
+            System.err.println("Requête inattendue.");
+            System.exit(1);
+        }
+
+        // Parsing des réponses [MOVE!_x_y**] et [MOVEF_x_y_p***]
+        coordonnees = new String(receiveTCPMessage(16));
+        x = coordonnees.substring(1, 4);
+        y = coordonnees.substring(5, 8);
+        if(reponse.equals("MOVE!")) {
+            return new int[]{Integer.parseInt(x), Integer.parseInt(y), -1};
+        }
+        p = coordonnees.substring(9, 12);
+        return new int[]{Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(p)};
+    }
+
+    /**
+     * Envoie la requête [IQUIT***] au serveur
+     * @return true si le serveur répond par conséquent, sinon false
+     */
+    public static boolean iquit() {
+        sendTCPMessage("IQUIT***");
+        return new String(receiveTCPMessage(8)).equals("GOBYE");
+    }
+
+    /**
+     * Envoie la requête [GLIS?***] au serveur
+     * @return un tableau composé de tableaux de type [id, x, y, p] où id désigne l'id du joueur, x et y ses coordonnées et p son score. La fonction renvoie null si la partie est finie lorsque ce message est envoyé.
+     */
+    public static String[][] glis() {
+        // Déclaration des variables
+        int s;
+        String gplyr, id, x, y, p;
+        String[][] output;
+
+        // Envoi de la requête [GLIS?***]
+        sendTCPMessage("GLIS?***");
+
+        // Vérification de la légalité de la réponse du serveur
+        String reponse = new String(receiveTCPMessage(5));
+        if(reponse.equals("GOBYE")) {
+            System.out.println("Partie terminée.");
+            return null;
+        }
+        else if(!reponse.equals("GLIS!")) {
+            System.err.println("Requête inattendue.");
+            System.exit(1);
+        }
+
+        // Parsing de la reponse [GLIS!_s***]
+        s = receiveTCPMessage(5)[2];
+
+        // Réception des réponses [GPLYR_id_x_y_p***]
+        output = new String[s][4];
+        for (int i = 0; i < s; i++) {
+            gplyr = new String(receiveTCPMessage(29));
+            id = gplyr.substring(6, 14);
+            x = gplyr.substring(15, 18);
+            y = gplyr.substring(19, 22);
+            p = gplyr.substring(23, 26);
+            output[i] = new String[]{id, x, y, p};
+        }
+        return output;
+    }
+
+    /**
+     * Envoie la requête [SEND?_id_mess***] au serveur
+     * @param id id du destinaire
+     * @param mess message à envoyer
+     * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
+    */
+    public static boolean send(String id, String mess) {
+        sendTCPMessage("SEND? " + id + " " + mess + "***");
+        return new String(receiveTCPMessage(8)).equals("SEND!***");
+    }
+
+    /**
+     * Envoie la requête [MALL?_mess***] au serveur
+     * @param mess message à envoyer
+     * @return true si le serveur répond que le message a été envoyé avec succès, false sinon
+     */
+    public static boolean mall(String mess) {
+        sendTCPMessage("MALL? " + mess + "***");
+        return new String(receiveTCPMessage(8)).equals("MALL!***");
+    }
+
+    public static void connect(String adresse) {
         try {
-            // Create a new socket
-            socket = new Socket("127.0.0.1", port);
-            // Create a new input stream
+            socket = new Socket(adresse, port);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            // Create a new output stream
             out = new PrintWriter(socket.getOutputStream(), true);
             outB = new DataOutputStream(socket.getOutputStream());
-        } catch (IOException e) {
-            System.out.println("Error: " + e);
-            System.err.println("Could not connect to the server.");
+        } 
+        catch (IOException e) {
+            e.printStackTrace();
             System.exit(1);
-            
         }
     }
     
     public void disconnect() {
         try {
-            // Close the input stream
             in.close();
-            // Close the output stream
             out.close();
-            // Close the socket
             socket.close();
-        } catch (IOException e) {
-            System.err.println("Could not disconnect from the server.");
+        } 
+        catch (IOException e) {
+            System.err.println("Erreur lors de la tentative de déconnexion du serveur.");
             System.exit(1);
         }
     }
     
-
-
-       //recieve tcp message
     public static byte[] receiveTCPMessage(int size) {
         byte[] data=new byte[size];
-        try{
+        try {
             socket.getInputStream().read(data);
         }
-        catch(IOException e){
-            System.out.println("Erreur de lecture");
+        catch(IOException e) {
+            System.err.println("Erreur de lecture du message TCP.");
         }
         return data;
     }
-    
-    
+
     public static void sendTCPMessage(String message) {
         out.print(message);
         out.flush();
@@ -872,7 +644,8 @@ public class Client {
     public static void sendTCPMessage(byte[] message) {
         try {
             outB.write(message);
-        } catch (IOException e) {
+        } 
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -890,73 +663,5 @@ public class Client {
             e.printStackTrace();
             return null;
         }
-    }
-    
-    public static String reqTCP() throws IOException{
-        String message = "";
-        char tmp;
-        boolean isEndRequest = false;
-        int compteur=0;
-        System.out.println("entrez votre message");
-        while(!isEndRequest) {
-            System.out.println("test read");
-            tmp=(char)in.read();
-            System.out.println("lu: "+tmp);
-            System.out.println("int: " + (int) tmp);
-            message+=tmp;
-            if(tmp=='*') {
-                compteur++;
-            }
-            if(compteur==3) {
-                isEndRequest=true;
-            }
-        }
-        System.out.println("Message reçu: "+message);
-        return message;
-    }
-
-    public static String[] welc(){
-        //[WELCO␣m␣h␣w␣f␣ip␣port***]
-        String[] tmp = new String[2];
-        String requete = new String(receiveTCPMessage(6));
-        if(requete.equals("DUNNO ")) 
-        {
-            System.out.println("La partie demandée n'existe pas.");
-            return null;
-        }
-        else if(!requete.equals("WELCO "))
-        {
-            System.out.println("Requête reçue inattendue.");
-            return null;
-        }
-        byte[] m = receiveTCPMessage(1); // m
-        receiveTCPMessage(1); // _
-        byte[] h = receiveTCPMessage(2); // h
-        receiveTCPMessage(1); // _
-        byte[] w = receiveTCPMessage(2); // w
-        receiveTCPMessage(1); // _
-        byte[] f = receiveTCPMessage(1); // f
-        receiveTCPMessage(1); // _
-        byte[] ip = receiveTCPMessage(15); // ip
-        receiveTCPMessage(1); // _
-        byte[] port = receiveTCPMessage(4); // port
-        receiveTCPMessage(3); // ***
-        String newIp=new String(ip);
-        for(int i=0;i<newIp.length();i++)
-        {
-            if(newIp.charAt(i)=='#')
-            {
-                newIp=newIp.substring(0,i);
-                break;
-            }
-        }
-        tmp[0]=newIp;
-        tmp[1] = new String(port);
-        System.out.println("Bienvenue dans la partie " + (int) m[0] + " qui a pour hauteur " + 
-            (int) ((h[0] & 0xff) + (h[1] & 0xff) * 0x100) + " cases pour largeur " + 
-            (int) ((w[0] & 0xff) + (w[1] & 0xff) * 0x100) + " cases ainsi que "+ 
-            (int) f[0] + " fantômes et dont l'ip est " + new String(ip) + " et le port est " + 
-            new String(port));
-        return tmp;
     }
 }

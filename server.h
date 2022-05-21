@@ -16,6 +16,11 @@
 #define HAUTEUR_DEFAUT 6
 #define FANTOMES_DEFAUT 6
 
+#define ESPACE_VIDE 0
+#define MUR 1
+#define JOUEUR 2
+#define FANTOME 3
+
 typedef struct Player
 {
     char id[9]; // id du joueur
@@ -33,8 +38,9 @@ typedef struct Player
 
 struct lobby
 {
-    char *ip; // adresse IP de multi-diffusion
-    char *port; // port de multi-diffusion
+    char* ip; // adresse IP de multi-diffusion
+    char* port; // port de multi-diffusion
+    char** labyrinthe;
     int sock; // socket de multi-diffusion
     Player* joueurs[255]; // tableau des joueurs
     struct sockaddr* saddr;
@@ -45,7 +51,7 @@ struct lobby
     uint16_t h; // hauteur du plateau
 };
 
-void* avant_partie(void* sock2);
+void* hub(void* sock2);
 void avant_partie_aux(Player* info_joueur);
 void games(Player* info_joueur);
 void newpl_regis(Player* info_joueur, uint8_t is_regis);
@@ -61,7 +67,12 @@ void gobye(Player* info_joueur);
 void glis(Player* info_joueur);
 void mall(Player* info_joueur);
 void send_mess(Player* info_joueur);
+void endga(Player* info_joueur);
 
+void deplacer_fantomes_aleatoirement(Player* info_joueur);
 int is_lobby_ready(uint8_t m);
-void resetGame(uint8_t m);
+Player* get_first_player(Player* info_joueur);
+Player* get_winner(Player* info_joueur);
+void reset_game(uint8_t m);
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
+char** parse_labyrinthe(char* filename);
