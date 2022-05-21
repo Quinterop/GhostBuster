@@ -12,7 +12,6 @@ void* hub(void* sock2)
     info_joueur -> etat = 0;
 
     avant_partie_aux(info_joueur);
-    partie_en_cours(info_joueur);
     return 0;
 }
 
@@ -28,7 +27,7 @@ void avant_partie_aux(Player* info_joueur){
     // Réception du message
     while(1)
     {
-        printf("En attente d'une requête [NEWPL_id_port***], [REGIS_id_port_m***], [START***], [UNREG***], [SIZE?_m***], [LIST?_m***], [GAME?***].\n");
+        printf("\nEn attente d'une requête [NEWPL_id_port***], [REGIS_id_port_m***], [START***], [UNREG***], [SIZE?_m***], [LIST?_m***], [GAME?***].\n");
         read_size = read(info_joueur -> sock_tcp, message, 5);
         if(0 >= read_size) 
         {
@@ -87,6 +86,8 @@ void avant_partie_aux(Player* info_joueur){
     printf("Le lobby est prêt, la partie va commencer.\n");
     
     welco(info_joueur);
+
+    partie_en_cours(info_joueur);
     return;
 }
 
@@ -121,34 +122,38 @@ void games(Player* info_joueur)
 
 void newpl_regis(Player* info_joueur, uint8_t is_regis)
 {
-    char buffer[3];
-    uint8_t i, j; // index de la partie et du joueur
+    char buffer[3], id[9], port[5];
+    uint8_t i, j, m; // index de la partie et du joueur
     
     // Réception des requêtes [NEWPL_id_port***] et [REGIS_id_port_m***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
-    read(info_joueur -> sock_tcp, info_joueur -> id, 8); // id
+    read(info_joueur -> sock_tcp, id, 8); // id
     read(info_joueur -> sock_tcp, buffer, 1); // _
-    read(info_joueur -> sock_tcp, info_joueur -> port, 4); // port
+    read(info_joueur -> sock_tcp, port, 4); // port
+    id[8] = '\0', port[5] = '\0';
     if(is_regis) // Réception spécifique à [REGIS_id_port_m***]
     {
         read(info_joueur -> sock_tcp, buffer, 1); // _
-        read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
+        read(info_joueur -> sock_tcp, &m, sizeof(uint8_t)); // m
+        read(info_joueur -> sock_tcp, buffer, 3);  // ***
         // Vérification de l'existence de la partie cherchée à être rejoindre 
-        if(parties[info_joueur -> m].etat != 1)
+        if(parties[m].etat != 1)
         {
+            // Envoi du message [REGNO***] au joueur
+            printf("La partie que le joueur souhaite entrer n'existe pas.\n");
             regno(info_joueur);
             return;
         }
     }
     else // Réception spécifique à [NEWPL_id_port***]
     {
-        for(i = 0; parties[i].etat != 0; i++){}
-        info_joueur -> m = i;
-    }
-    read(info_joueur -> sock_tcp, buffer, 3); // ***
+        read(info_joueur -> sock_tcp, buffer, 3); // ***
 
-    info_joueur -> id[8] = '\0', info_joueur -> port[5] = '\0';
-    printf("id : %s\nport : %s\nm : %d\n", info_joueur -> id, info_joueur -> port, info_joueur -> m);
+        for(i = 0; parties[i].etat != 0; i++){}
+        m = i;
+    }
+
+    printf("id : %s\nport : %s\nm : %u\n", id, port, m);
 
     // Vérification que le joueur peut s'inscrire à une partie
     if(info_joueur -> etat == 1)
@@ -159,10 +164,11 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     }
 
     // Vérification de la légalité de l'ID du joueur
-    for(uint8_t a = 0; a < strlen(info_joueur -> id); a++)
+    for(uint8_t a = 0; a < strlen(id); a++)
     {
-        if(!isalnum(info_joueur -> id[a]))
+        if(!isalnum(id[a]))
         {
+            // Envoi du message [REGNO***]
             printf("L'id est invalide (ne contient pas uniquement des caractères alphanumériques).\n");
             regno(info_joueur);
             return;
@@ -170,62 +176,71 @@ void newpl_regis(Player* info_joueur, uint8_t is_regis)
     }
 
     // Création du socket UDP du joueur
+    char ip[16], port_multicast[5];
     int sock_udp;
-    struct addrinfo *first_info;
-    struct addrinfo hints;
+    struct addrinfo *first_info, hints, *first_info_multicast, hints_multicast;;
+    struct sockaddr* saddr;
+
     memset(&hints, 0, sizeof(struct addrinfo));
     sock_udp = socket(PF_INET, SOCK_DGRAM, 0);
     if(sock_udp == -1)
     {
-        printf("Erreur lors de la création de la socket UDP du joueur.\n");
         // Envoi du message [REGNO***]
+        printf("Erreur lors de la création de la socket UDP du joueur.\n");
         regno(info_joueur);
         return;
     }
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
     
-    if(getaddrinfo("localhost", info_joueur -> port, &hints, &first_info) != 0 || first_info == NULL)
+    if(getaddrinfo("localhost", port, &hints, &first_info) != 0 || first_info == NULL)
     {
         // Envoi du message [REGNO***]
         printf("Erreur lors du bind de la socket UDP du joueur.\n");
         regno(info_joueur);
         return;
     }
-    info_joueur -> sock_udp = sock_udp;
-    info_joueur -> saddr = first_info -> ai_addr;
+    sock_udp = sock_udp;
+    saddr = first_info -> ai_addr;
     printf("Socket UDP créée.\n");
     
     // Attribution du joueur dans la liste de joueurs de la partie
-    for(j = 0; parties[info_joueur -> m].joueurs[j] != NULL; j++){}
-    parties[info_joueur -> m].joueurs[j] = info_joueur;
+    for(j = 0; parties[m].joueurs[j] != NULL; j++) {}
+    parties[m].joueurs[j] = info_joueur;
 
     // Attribution des valeurs par défaut s'il s'agit d'une nouvelle partie
-    if(parties[info_joueur->m].etat == 0)
+    if(parties[m].etat == 0)
     {
-        char ip[16] = "###############";
-        char port_multicast[5];
-        struct addrinfo *first_info_multicast, hints_multicast;
+        strcpy(ip, "###############");
         memset(&hints_multicast, 0, sizeof(struct addrinfo));
         parties[i].sock = socket(PF_INET, SOCK_DGRAM, 0);
         hints_multicast.ai_family = AF_INET;
         hints_multicast.ai_socktype = SOCK_DGRAM;
         do
         {
-            //sprintf(ip, "224.120.100.%u", i);
             sprintf(ip, "224.4.5.6");
-            sprintf(port_multicast, "%d", info_joueur->m + 6000);
+            sprintf(port_multicast, "%d", m + 6000);
             printf("Test de la disponibilité de l'adresse IP multicast \"%s\" avec le port %s...\n", ip, port_multicast);
         } while(getaddrinfo(ip, port_multicast, &hints_multicast, &first_info_multicast) != 0);
         printf("Test réussi.\n");
         
+        pthread_mutex_lock(&verrou);
         n++;
-        strcpy(parties[info_joueur->m].ip, ip);
-        strcpy(parties[info_joueur->m].port, port_multicast);
-        parties[info_joueur->m].saddr = first_info_multicast -> ai_addr;
-        parties[info_joueur->m].etat = 1;
+        strcpy(parties[m].ip, ip);
+        strcpy(parties[m].port, port_multicast);
+        parties[m].saddr = first_info_multicast -> ai_addr;
+        parties[m].etat = 1;
+        pthread_mutex_unlock(&verrou);
     }
+    
+    // Attribution des valeurs aux informations du joueur
     info_joueur -> etat = 1;
+    strcpy(info_joueur -> id, id);
+    strcpy(info_joueur -> port, port);
+    info_joueur -> m = m;
+    info_joueur -> sock_udp = sock_udp;
+    info_joueur -> saddr = saddr;
+
     pthread_mutex_lock(&verrou);
     parties[info_joueur -> m].s += 1;
     pthread_mutex_unlock(&verrou);
@@ -262,6 +277,7 @@ void unreg(Player* info_joueur)
     if(parties[info_joueur -> m].s == 0)
     {
         printf("La partie %u est supprimée.\n", info_joueur -> m);
+        parties[info_joueur -> m].etat = 0; 
         reset_game(info_joueur -> m);
         n--;
     }
@@ -274,20 +290,21 @@ void unreg(Player* info_joueur)
         perror("Erreur lors de l'envoi du message [UNROK_m***].\n");
     }
     printf("Message [UNROK m***] envoyé au joueur (m = %u).\n", info_joueur -> m);
-    avant_partie_aux(info_joueur);
+    return;
 }
 
 void size(Player* info_joueur)
 {
     char buffer[3];
+    uint8_t m;
 
     // Réception de la requête [SIZE?_m***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
-    read(info_joueur -> sock_tcp, &info_joueur -> m, sizeof(uint8_t)); // m
+    read(info_joueur -> sock_tcp, &m, sizeof(uint8_t)); // m
     read(info_joueur -> sock_tcp, buffer, 3); // ***
 
     // Vérification de l'existence de la partie demandée
-    if(parties[info_joueur -> m].etat == 0)
+    if(parties[m].etat == 0)
     {
         // Envoi du message [DUNNO***]
         dunno(info_joueur);
@@ -296,21 +313,21 @@ void size(Player* info_joueur)
 
     // Envoi du message [SIZE!_m_h_w***]
     char size[16] = "SIZE! m h. w.***";
-    memcpy(size + 6, &info_joueur -> m, sizeof(uint8_t));
-    memcpy(size + 8, &parties[info_joueur -> m].h, sizeof(uint16_t));
-    memcpy(size + 11, &parties[info_joueur -> m].l, sizeof(uint16_t));
+    memcpy(size + 6, &m, sizeof(uint8_t));
+    memcpy(size + 8, &parties[m].h, sizeof(uint16_t));
+    memcpy(size + 11, &parties[m].l, sizeof(uint16_t));
     if(write(info_joueur -> sock_tcp, size, 16) == -1)
     {
         perror("Erreur lors de l'envoi du message [SIZE!_m_h_w***].\n");
         return;
     }
-    printf("Message [SIZE!_m_h_w***] envoyé au joueur (m = %d, h = %d, w = %d).\n", info_joueur -> m, parties[info_joueur -> m].h, parties[info_joueur -> m].l);
+    printf("Message [SIZE!_m_h_w***] envoyé au joueur (m = %d, h = %d, w = %d).\n", m, parties[info_joueur -> m].h, parties[info_joueur -> m].l);
 }
 
 void list(Player* info_joueur)
 {
     char buffer[3];
-    uint8_t m = 0;
+    uint8_t m;
 
     // Réception de la requête [LIST?_m***]
     read(info_joueur -> sock_tcp, buffer, 1); // _
@@ -328,27 +345,27 @@ void list(Player* info_joueur)
     // Envoi du message [LIST!_m_s***] 
     char list[12] = "LIST! m s***";
     memcpy(list + 6, &m, sizeof(uint8_t));
-    memcpy(list + 8, &parties[info_joueur -> m].s, sizeof(uint8_t));
+    memcpy(list + 8, &parties[m].s, sizeof(uint8_t));
     if(write(info_joueur -> sock_tcp, list, 12) == -1)
     {
         perror("Erreur lors de l'envoi du message [LIST!_m_s***].\n");
         return;
     }
-    printf("Message [LIST!_m_s***] envoyé au joueur (m = %u, s = %u).\n", info_joueur -> m, parties[info_joueur -> m].s);
+    printf("Message [LIST!_m_s***] envoyé au joueur (m = %u, s = %u).\n", m, parties[m].s);
 
     // Envoi du/des message(s) [PLAYR_id***]
     char playr[17] = "PLAYR id......***";
     for(uint8_t i = 0; i < 255; i++)
     {
-        if(parties[info_joueur -> m].joueurs[i] != NULL)
+        if(parties[m].joueurs[i] != NULL)
         {
-            memcpy(playr + strlen("PLAYR "), parties[info_joueur -> m].joueurs[i] -> id, 8);
+            memcpy(playr + 6, parties[m].joueurs[i] -> id, 8);
             if(write(info_joueur -> sock_tcp, playr, 17) == -1)
             {
                 perror("Erreur lors de l'envoi du message [PLAYR_id***].\n");
                 return;
             }
-            printf("Message [PLAYR_id***] envoyé au joueur (id = %s).\n", parties[info_joueur -> m].joueurs[i] -> id);
+            printf("Message [PLAYR_id***] envoyé au joueur (id = %s).\n", parties[m].joueurs[i] -> id);
         }
     }
 }
@@ -373,7 +390,7 @@ void welco(Player* info_joueur)
     if(info_joueur == get_first_player(info_joueur))
     {
         // TODO: appeller avec la ligne de commande le générateur
-        parties[info_joueur -> m].labyrinthe = parse_labyrinthe("labyrinthe0.txt");
+        parties[info_joueur -> m].plateau = parse_txt("labyrinthe0.txt");
     }
 
     // Définition de la position x et y de départ du joueur dans le labyrinthe
@@ -383,7 +400,7 @@ void welco(Player* info_joueur)
     {  
         x = rand() % parties[info_joueur -> m].l;
         y = rand() % parties[info_joueur -> m].h;
-    } while(parties[info_joueur -> m].labyrinthe[x][y] != ESPACE_VIDE);
+    } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
     uint16_to_len_str(x_string, rand() % parties[info_joueur -> m].l, 3);
     uint16_to_len_str(y_string, rand() % parties[info_joueur -> m].h, 3);
     strcpy(info_joueur -> x, x_string);
@@ -474,13 +491,12 @@ void partie_en_cours(Player* info_joueur)
             {
                 reset_game(info_joueur -> m);
                 n--;
-                printf("La partie est terminée, il n'y a plus aucuns joueurs dedans.\n");
+                printf("La partie est terminée, il n'y a plus aucun joueurs dedans.\n");
             }
             else
             {
                 printf("Le joueur %s a quitté la partie.\n", info_joueur -> id);
             }
-            avant_partie_aux(info_joueur);
             return;
         }
         else if(strcmp(message, "GLIS?") == 0) // [GLIS?***]
@@ -510,6 +526,94 @@ void partie_en_cours(Player* info_joueur)
         }
     }
 }
+
+void move(char d, Player* info_joueur){
+    char buffer[4], mess[4];
+    int is_move_finished = 1;
+    
+
+    recv(info_joueur -> sock_tcp, buffer, 1, 0);
+    recv(info_joueur -> sock_tcp, mess, 3, 0);
+    printf("Message reçu: %s\n", mess);
+    mess[3] = '\0';
+    uint16_t depl=atoi(mess);
+    printf("Deplacement demandé: %d\n", depl);
+
+    uint16_t y=atoi(info_joueur->y);
+    uint16_t x=atoi(info_joueur->x);
+
+    recv(info_joueur -> sock_tcp, buffer, 3, 0);
+    char stck[4];
+
+
+    switch (d){
+        case 'U':
+            for(uint16_t i = y ; i >= y - depl ; i--) {
+                if(parties[info_joueur -> m].plateau[i - 1][x]==1 || i - 1 < 0) {
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
+                    strcpy(info_joueur->y, stck);
+                    is_move_finished = 0;
+                    break;
+                }
+            }
+            if(is_move_finished) {
+                uint16_to_len_str(stck, y - depl, 3);
+                strcpy(info_joueur -> y, stck);
+            }
+        break;
+        case 'D':
+            for(uint16_t i = y ; i <= y + depl ; i++) {
+                if(parties[info_joueur -> m].plateau[i + 1][x]==1 || i + 1 >= parties[info_joueur -> m].h){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
+                    strcpy(info_joueur -> y, stck);
+                    is_move_finished = 0;
+                    break;
+                }
+            }
+            if(is_move_finished) {
+                uint16_to_len_str(stck, y + depl, 3);
+                strcpy(info_joueur -> y, stck);
+            }
+        break;
+        case 'L':
+            for(uint16_t i = x ; i >= x - depl ; i--) {
+                if(parties[info_joueur -> m].plateau[y][i - 1]==1 || i - 1 < 0){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
+                    strcpy(info_joueur -> x, stck);
+                    is_move_finished = 0;
+                    break;
+                }
+            }
+            if(is_move_finished) {
+                uint16_to_len_str(stck, x - depl, 3);
+                strcpy(info_joueur -> x, stck);
+            }
+        break;
+        case 'R':
+            for(uint16_t i = x ; i <= x + depl ; i++) {
+                if(parties[info_joueur -> m].plateau[y][i + 1]==1 || i + 1 >= parties[info_joueur -> m].l){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
+                    strcpy(info_joueur -> x, stck);
+                    is_move_finished = 0;
+                    break;
+                }
+            }
+            if(is_move_finished) {
+                uint16_to_len_str(stck, x + depl, 3);
+                strcpy(info_joueur -> x, stck);
+            }
+        break;  
+    }
+    char* mess_send = malloc(sizeof(char)*16);
+    sprintf(mess_send, "MOVE! %s %s***", info_joueur -> x, info_joueur -> y);
+    printf("Message envoyé: %s\n", mess_send);
+    send(info_joueur -> sock_tcp, mess_send, 16, 0);
+}
+
 
 void gobye(Player* info_joueur)
 {
@@ -672,8 +776,8 @@ void deplacer_fantomes_aleatoirement(Player* info_joueur)
         {
             x = rand() % parties[info_joueur -> m].l;
             y = rand() % parties[info_joueur -> m].h;
-        } while(parties[info_joueur -> m].labyrinthe[x][y] != ESPACE_VIDE);
-        parties[info_joueur -> m].labyrinthe[x][y] = FANTOME;
+        } while(parties[info_joueur -> m].plateau[x][y] != ESPACE_VIDE);
+        parties[info_joueur -> m].plateau[x][y] = FANTOME;
         uint16_to_len_str(x_string, x, 3);
         uint16_to_len_str(y_string, y, 3);
 
@@ -791,25 +895,26 @@ void reset_game(uint8_t m){
     }
 }
 
-char** parse_labyrinthe(char* filename)
+int** parse_txt(char* filename)
 {
     FILE* f = fopen(filename, "r");
-    if(f == NULL)
-    {
+    if(f == NULL) {
         perror("Erreur lors de l'ouverture du fichier.\n");
         fclose(f);
         exit(1);
     }
-    char** lines = malloc(sizeof(char*) * 255);
+    int** lines = malloc(sizeof(int*) * 255);
     int i = 0;
     char* buffer=malloc(sizeof(char) * 255);
-    while(fgets(buffer, 255, f) != NULL)
-    {
-        lines[i] = malloc(sizeof(char) * 255);
-        strcpy(lines[i], buffer);
+    while(fgets(buffer, 255, f) != NULL) {
+        lines[i] = malloc(sizeof(int) * 255);
+        for(int j = 0; j < 255; j++) {
+            lines[i][j] = buffer[j] - '0';
+        }
         i++;
     }
     fclose(f);
+    free(buffer);
     return lines;
 }
 

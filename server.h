@@ -16,8 +16,8 @@
 #define HAUTEUR_DEFAUT 6
 #define FANTOMES_DEFAUT 6
 
-#define ESPACE_VIDE 0
-#define MUR 1
+#define ESPACE_VIDE '0'
+#define MUR '1'
 #define JOUEUR 2
 #define FANTOME 3
 
@@ -40,8 +40,8 @@ struct lobby
 {
     char* ip; // adresse IP de multi-diffusion
     char* port; // port de multi-diffusion
-    char** labyrinthe;
     int sock; // socket de multi-diffusion
+    int** plateau; // plateau de jeu
     Player* joueurs[255]; // tableau des joueurs
     struct sockaddr* saddr;
     uint8_t etat; // 0 -> inoccupé, 1 -> partie non lancée mais occupée, 2 -> partie en cours
@@ -49,6 +49,7 @@ struct lobby
     uint8_t s; // nombre de joueurs inscrits
     uint16_t l; // largeur du plateau
     uint16_t h; // hauteur du plateau
+
 };
 
 void* hub(void* sock2);
@@ -63,6 +64,7 @@ void regno(Player* info_joueur);
 void dunno(Player* info_joueur);
 
 void partie_en_cours(Player* info_joueur);
+void move(char d, Player* info_joueur);
 void gobye(Player* info_joueur);
 void glis(Player* info_joueur);
 void mall(Player* info_joueur);
@@ -75,4 +77,4 @@ Player* get_first_player(Player* info_joueur);
 Player* get_winner(Player* info_joueur);
 void reset_game(uint8_t m);
 void uint16_to_len_str(char* dest, uint16_t nombre, uint8_t n);
-char** parse_labyrinthe(char* filename);
+int** parse_txt(char* filename);

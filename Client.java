@@ -22,17 +22,18 @@ public class Client {
     private static Scanner sc = new Scanner(System.in);
     private static Communication communication;
     private static CommMulticast commMulticast;
-    
+    private static Thread t = new Thread(communication);
+    private static Thread t2 = new Thread(commMulticast);
     
     public static void main(String[] args) {
         // Parsing de la ligne de commande
         id = args[0];
         port = Integer.parseInt(args[1]);
-        if(id.length() != 8 && id.matches("^.*[^a-zA-Z0-9 ].*$")) {
+        if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {
             System.err.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
             System.exit(1);
         }
-        if(port > 0 || port > 65535) {
+        if(0 > port || port > 65535) {
             System.err.println("La valeur donnée au port est illégale.");
             System.exit(1);
         }
@@ -56,7 +57,7 @@ public class Client {
 
         while(true) {
             System.out.print(
-                "Sélectionnez un choix :\n" +
+                "\nSélectionnez un choix :\n" +
                 "1/ Créer une nouvelle partie\n" +
                 "2/ Rejoindre une partie existante\n" +
                 "3/ Quitter la partie en cours\n" +
@@ -83,7 +84,12 @@ public class Client {
                 case 1: // [NEWPL_id_port***]
                     System.out.print("Veuillez entrer un numéro de port UDP : ");
                     portUDP = sc.nextLine();
-                    if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
+                    try {
+                        if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
+                            throw new IllegalArgumentException();    
+                        }
+                    }
+                    catch (IllegalArgumentException e) {
                         System.out.println("Numéro de port illégal.");
                         break;
                     }
@@ -97,12 +103,26 @@ public class Client {
                 case 2: // [REGIS_id_port_m***]
                     System.out.print("Veuillez entrer un numéro de port UDP : ");
                     portUDP = sc.nextLine();
-                    if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
+                    try {
+                        if(Integer.parseInt(portUDP) < 1024 || Integer.parseInt(portUDP) > 8191) {
+                            throw new IllegalArgumentException();    
+                        }
+                    }
+                    catch (IllegalArgumentException e) {
                         System.out.println("Numéro de port illégal.");
                         break;
                     }
                     System.out.print("Sélectionnez le numéro de partie que vous souhaitez rejoindre : ");
-                    n = Integer.parseInt(sc.nextLine());
+                    try {
+                        n = Integer.parseInt(sc.nextLine());
+                        if(0 > n || n > 255) {
+                            throw new IllegalArgumentException();
+                        }
+                    } 
+                    catch (IllegalArgumentException e) {
+                        System.out.println("Numéro de partie illégal.");
+                        break;
+                    }
                     m = regis(id, portUDP, n);
                     if(m == -1) {
                         System.out.println("Erreur lors de la tentative de join la partie citée.");
@@ -120,7 +140,16 @@ public class Client {
                     break;
                 case 4: // [SIZE?_m***]
                     System.out.print("Sélectionnez le numéro de la partie : ");
-                    m = Integer.parseInt(sc.nextLine());
+                    try {
+                        m = Integer.parseInt(sc.nextLine());
+                        if(0 > m || m > 255) {
+                            throw new IllegalArgumentException();
+                        }
+                    } 
+                    catch (IllegalArgumentException e) {
+                        System.out.println("Numéro de partie illégal.");
+                        break;
+                    }
                     int[] s = size(m);
                     if(s == null) {
                         System.out.println("Erreur lors de la demande de taille de cette partie. Elle peut être inexistante.");
@@ -130,7 +159,16 @@ public class Client {
                     break;
                 case 5: // [LIST?_m***]
                     System.out.print("Sélectionnez le numéro de la partie : ");
-                    m = Integer.parseInt(sc.nextLine());
+                    try {
+                        m = Integer.parseInt(sc.nextLine());
+                        if(0 > m || m > 255) {
+                            throw new IllegalArgumentException();
+                        }
+                    } 
+                    catch (IllegalArgumentException e) {
+                        System.out.println("Numéro de partie illégal.");
+                        break;
+                    }
                     String[] id_list = list(m);
                     if(id_list == null) {
                         System.out.println("Erreur lors de la demande de joueurs de cette partie. Elle peut être inexistante.");
@@ -234,15 +272,16 @@ public class Client {
         sendTCPMessage("UNREG***");
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
+            receiveTCPMessage(3); // lis les "***" restantes
             System.err.println("Inscrit à aucune partie.");
             return -1;
         }
-        if(!reponse.equals("REGOK")) {
+        if(!reponse.equals("UNROK")) {
             System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
-        byte[] regok = receiveTCPMessage(9);
-        return regok[5];
+        byte[] unrok = receiveTCPMessage(5);
+        return unrok[1];
         
     }
 
@@ -252,14 +291,16 @@ public class Client {
      * @return un tableau au format {m, h, w} où m est le numéro de partie, h et w les tailles du labyrinthe correspondant. Renvoie null si la partie m n'existe pas.
      */
     public static int[] size(int m) {
-        sendTCPMessage("SIZE? " + m + "***");
+        sendTCPMessage("SIZE? " + (char) m + "***");
 
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("DUNNO")) {
+            receiveTCPMessage(3); // lis les "***" restantes
             return null;
         }
         else if(!reponse.equals("SIZE!")) {
-            throw new IllegalArgumentException();
+            System.err.println("Requête reçue inattendue.");
+            System.exit(1);
         }
 
         // Réponse attendue : [SIZE!_m_h_w***]
@@ -277,8 +318,14 @@ public class Client {
      */
     public static String[] list(int m) {
         sendTCPMessage("LIST? " + (char) m + "***");
-        if(new String(receiveTCPMessage(5)).equals("DUNNO")) {
+        String reponse = new String(receiveTCPMessage(5));
+        if(reponse.equals("DUNNO")) {
+            receiveTCPMessage(3); // lis les "***" restantes
             return null;
+        }
+        else if(!reponse.equals("LIST!")) {
+            System.err.println("Requête reçue inattendue.");
+            System.exit(1);
         }
         byte[] list = receiveTCPMessage(7);
         int m2 = list[1];
@@ -310,8 +357,8 @@ public class Client {
         System.out.println("Vous êtes positonné dans les coordonnées (" + posit[1] + ", " + posit[2] + ").");
         communication = new Communication(Integer.parseInt(portUDP));
         commMulticast = new CommMulticast(welco[4], Integer.parseInt(welco[5]));
-        Thread t = new Thread(communication);
-        Thread t2 = new Thread(commMulticast);
+        t = new Thread(communication);
+        t2 = new Thread(commMulticast);
         t.start();
         t2.start();
     }
@@ -323,6 +370,7 @@ public class Client {
     public static String[] welco() {
         String requete = new String(receiveTCPMessage(5));
         if(requete.equals("DUNNO")) {
+            receiveTCPMessage(3); // lis les "***" restantes
             System.err.println("La partie demandée n'existe pas.");
             return null;
         }
@@ -330,7 +378,7 @@ public class Client {
             System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
-        byte[] donnees = receiveTCPMessage(33); // _m_h_w_f_ip_port***
+        byte[] donnees = receiveTCPMessage(34); // _m_h_w_f_ip_port***
         int m = donnees[1];
         int h = (donnees[3] & 0xff) + (donnees[4] & 0xff) * 0x100;
         int w = (donnees[6] & 0xff) + (donnees[7] & 0xff) * 0x100;
@@ -355,7 +403,7 @@ public class Client {
     public static String[] posit() {
         String requete = new String(receiveTCPMessage(5));
         if(!requete.equals("POSIT")) {
-            System.err.println("Requête inattendue.");
+            System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
         String donnees = new String(receiveTCPMessage(20));
@@ -370,8 +418,10 @@ public class Client {
         String[][] liste_joueurs;
 
         while(true){
+            commMulticast.affiche=true;
+            communication.affiche=true;
             System.out.print(
-                "Sélectionnez un choix :\n" +
+                "\nSélectionnez un choix :\n" +
                 "0-3/ Se déplacer, respectivement, vers le haut, bas, gauche et droite\n" +
                 "4/ Quitter la partie en cours\n" +
                 "5/ Lister les joueurs de la partie\n" +
@@ -388,7 +438,7 @@ public class Client {
                 }
             }  
             catch (IllegalArgumentException | NoSuchElementException | IllegalStateException e) {
-                System.out.println("Veuillez suivre les instructions.");
+                System.out.println("Choix donné illégal.");
                 continue;
             }
 
@@ -421,6 +471,10 @@ public class Client {
                     break;
                 case 4: // [IQUIT***]
                     if(iquit()) {
+                        commMulticast.arreter();
+                        communication.arreter();
+                        sc.close();
+                        disconnect();
                         return;
                     }
                     else {
@@ -461,6 +515,10 @@ public class Client {
                         System.out.println("Erreur lors de l'envoi du message.");
                     }
                     break;
+                default:
+                    System.out.println("Choix donné illégal.");
+                    break;
+
             } 
         }
     }
@@ -536,7 +594,7 @@ public class Client {
      */
     public static boolean iquit() {
         sendTCPMessage("IQUIT***");
-        return new String(receiveTCPMessage(8)).equals("GOBYE");
+        return new String(receiveTCPMessage(8)).equals("GOBYE***");
     }
 
     /**
@@ -555,11 +613,12 @@ public class Client {
         // Vérification de la légalité de la réponse du serveur
         String reponse = new String(receiveTCPMessage(5));
         if(reponse.equals("GOBYE")) {
+            receiveTCPMessage(3); // lis les "***" restantes
             System.out.println("Partie terminée.");
             return null;
         }
         else if(!reponse.equals("GLIS!")) {
-            System.err.println("Requête inattendue.");
+            System.err.println("Requête reçue inattendue.");
             System.exit(1);
         }
 
@@ -608,12 +667,12 @@ public class Client {
             outB = new DataOutputStream(socket.getOutputStream());
         } 
         catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la création de la socket.");
             System.exit(1);
         }
     }
     
-    public void disconnect() {
+    public static void disconnect() {
         try {
             in.close();
             out.close();
@@ -651,15 +710,16 @@ public class Client {
     }
     
     public static String recieveUdpMessage() {
-        try{
-            DatagramSocket dso=new DatagramSocket(port);
-            byte[]data=new byte[maxReadUDP];
-            DatagramPacket paquet=new DatagramPacket(data,data.length);
+        try {
+            DatagramSocket dso = new DatagramSocket(port);
+            byte[]data = new byte[maxReadUDP];
+            DatagramPacket paquet = new DatagramPacket(data,data.length);
             dso.receive(paquet);
-            String st=new String(paquet.getData(),0,paquet.getLength());
+            String st = new String(paquet.getData(), 0, paquet.getLength());
             dso.close();
             return st;
-        } catch(Exception e){
+        } 
+        catch(Exception e) {
             e.printStackTrace();
             return null;
         }
