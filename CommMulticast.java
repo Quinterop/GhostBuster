@@ -1,7 +1,7 @@
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+
 
 public class CommMulticast implements Runnable{
     
@@ -9,20 +9,36 @@ public class CommMulticast implements Runnable{
     int port;
     MulticastSocket socket;
     boolean affiche;
-    boolean terminate;
+    InetAddress address;
+    volatile boolean terminate;
 
+
+    
 
     public CommMulticast(String ip,int port) {
         this.port = port;
         try {
+            address=InetAddress.getByName(ip);
             affiche=false;
             terminate=false;
             socket = new MulticastSocket(port);
-            socket.joinGroup(InetAddress.getByName(ip));
+            socket.joinGroup(address);
             System.out.println("Communication Multicast: " + port+" "+InetAddress.getByName(ip));
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void arreter(){
+        terminate=true;
+        System.out.println("Déconnexion du multicast");
+        try {
+            socket.leaveGroup(address);
+            socket.close();
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }  
     }
 
     @Override
@@ -40,17 +56,12 @@ public class CommMulticast implements Runnable{
                 System.out.println(user+": "+message);
                 affiche=false;
             }
-            socket.leaveGroup(InetAddress.getByName(ip));
-            socket.close();
+            return;
         }
         catch (Exception e) {
-            try {
-                socket.leaveGroup(InetAddress.getByName(ip));
-            } catch (IOException e1) {
-                e1.printStackTrace();
+            if(!terminate){
+                arreter();
             }
-            socket.close();
-            System.out.println("Error: " + e.getMessage());
         } 
     }
 

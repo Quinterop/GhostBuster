@@ -398,6 +398,23 @@ void welco(Player* info_joueur)
 
     // Définition de la position x et y de départ du joueur dans le labyrinthe
     char x[4], y[4];
+    int pos_ok = 0;
+    while(!pos_ok)
+    {
+        // Génération aléatoire de la position x
+        uint16_t x_alea = rand() % parties[info_joueur -> m].l;
+        
+
+        // Génération aléatoire de la position y
+        uint16_t y_alea = rand() % parties[info_joueur -> m].h;
+        
+
+        // Vérification de la position x et y
+        if(parties[info_joueur -> m].plateau[y_alea][x_alea] == 0)
+        {
+            pos_ok = 1;
+        }
+    }
     uint16_to_len_str(x, rand() % parties[info_joueur -> m].l, 3);
     uint16_to_len_str(y, rand() % parties[info_joueur -> m].h, 3);
     strcpy(info_joueur -> x, x);
@@ -739,6 +756,7 @@ void resetPlayer(Player* joueur){
 
 void move(char d, Player* info_joueur){
     char buffer[4], mess[4];
+    int is_move_finished = 1;
     
 
     recv(info_joueur -> sock_tcp, buffer, 1, 0);
@@ -758,47 +776,63 @@ void move(char d, Player* info_joueur){
     switch (d){
         case 'U':
             for(uint16_t i = y ; i >= y - depl ; i--){
-                if(parties[info_joueur -> m].plateau[i][x]==1 || i - 1 < 0){
-                    uint16_to_len_str(stck, i + 1, 3);
+                if(parties[info_joueur -> m].plateau[i - 1][x]==1 || i - 1 < 0){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
                     strcpy(info_joueur->y, stck);
+                    is_move_finished = 0;
                     break;
                 }
             }
-            uint16_to_len_str(stck, y - depl, 3);
-            strcpy(info_joueur -> y, stck);
+            if(is_move_finished){
+                uint16_to_len_str(stck, y - depl, 3);
+                strcpy(info_joueur -> y, stck);
+            }
         break;
         case 'D':
             for(uint16_t i = y ; i <= y + depl ; i++){
-                if(parties[info_joueur -> m].plateau[i][x]==1 || i + 1 >= parties[info_joueur -> m].h){
-                    uint16_to_len_str(stck, i - 1, 3);
+                if(parties[info_joueur -> m].plateau[i + 1][x]==1 || i + 1 >= parties[info_joueur -> m].h){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
                     strcpy(info_joueur -> y, stck);
+                    is_move_finished = 0;
                     break;
                 }
             }
-            uint16_to_len_str(stck, y + depl, 3);
-            strcpy(info_joueur -> y, stck);
+            if(is_move_finished){
+                uint16_to_len_str(stck, y + depl, 3);
+                strcpy(info_joueur -> y, stck);
+            }
         break;
         case 'L':
             for(uint16_t i = x ; i >= x - depl ; i--){
-                if(parties[info_joueur -> m].plateau[y][i]==1 || i - 1 < 0){
-                    uint16_to_len_str(stck, i + 1, 3);
+                if(parties[info_joueur -> m].plateau[y][i - 1]==1 || i - 1 < 0){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
                     strcpy(info_joueur -> x, stck);
+                    is_move_finished = 0;
                     break;
                 }
             }
-            uint16_to_len_str(stck, x - depl, 3);
-            strcpy(info_joueur -> x, stck);
+            if(is_move_finished){
+                uint16_to_len_str(stck, x - depl, 3);
+                strcpy(info_joueur -> x, stck);
+            }
         break;
         case 'R':
             for(uint16_t i = x ; i <= x + depl ; i++){
-                if(parties[info_joueur -> m].plateau[y][i]==1 || i + 1 >= parties[info_joueur -> m].l){
-                    uint16_to_len_str(stck, i - 1, 3);
+                if(parties[info_joueur -> m].plateau[y][i + 1]==1 || i + 1 >= parties[info_joueur -> m].l){
+                    printf("test %d, %d\n", i, parties[info_joueur -> m].plateau[i - 1][x]);
+                    uint16_to_len_str(stck, i, 3);
                     strcpy(info_joueur -> x, stck);
+                    is_move_finished = 0;
                     break;
                 }
             }
-            uint16_to_len_str(stck, x + depl, 3);
-            strcpy(info_joueur -> x, stck);
+            if(is_move_finished){
+                uint16_to_len_str(stck, x + depl, 3);
+                strcpy(info_joueur -> x, stck);
+            }
         break;  
     }
     char* mess_send = malloc(sizeof(char)*16);

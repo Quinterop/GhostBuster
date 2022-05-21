@@ -10,7 +10,7 @@ public class Communication implements Runnable{
     int port;
     DatagramSocket socket;
     boolean affiche;
-    boolean terminate;
+    volatile boolean terminate;
 
 
     public Communication(int port) {
@@ -23,6 +23,12 @@ public class Communication implements Runnable{
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void arreter(){
+        terminate=true;
+        System.out.println("Déconnexion du UDP");
+        socket.close();
     }
 
     @Override
@@ -40,11 +46,13 @@ public class Communication implements Runnable{
                 System.out.println(user+": "+message);
                 affiche=false;
             }
-            socket.close();
+            return;
         }
         catch (Exception e) {
-            socket.close();
-            System.out.println("Error: " + e.getMessage());
+            if(!terminate){
+                System.out.println("Error: " + e.getMessage());
+                arreter();
+            }
         } 
     }
 }

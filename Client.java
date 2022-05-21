@@ -449,7 +449,6 @@ public class Client {
                 System.out.println("Veuillez suivre les instructions");
                 continue;
             }
-            
         }
         avantPartie();
     }
@@ -554,7 +553,7 @@ public class Client {
                     enJeu();
                     if(isOver){
                         System.out.println("partie terminée");
-                        System.exit(0);
+                        return;
                     }
                 break;
                 default:
@@ -796,13 +795,11 @@ public class Client {
                     byte[] prem = receiveTCPMessage(8);
                     System.out.println(new String(prem));
                     fin=true;
-                    disconnect();
-                    commMulticast.terminate=true;
-                    communication.terminate=true;
-                    t.interrupt();
-                    t2.interrupt();
+                    commMulticast.arreter();
+                    communication.arreter();
                     sc.close();
                     isOver=true;
+                    disconnect();
                     return;
                 }
                 case 5:{
