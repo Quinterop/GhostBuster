@@ -25,7 +25,7 @@ typedef struct Player
 {
     char id[9]; // id du joueur
     char port[5]; // port UDP du joueur
-    char p[4]; // nombre de points du joueur
+    char p[5]; // nombre de points du joueur
     char x[4]; // coordonnée x où se trouve le joueur dans le labyrinthe
     char y[4]; // coordonnée y où se trouve le joueur dans le labyrinthe
     int sock_tcp; // sock du joueur

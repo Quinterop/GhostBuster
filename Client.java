@@ -677,7 +677,7 @@ public class Client {
             id = gplyr.substring(6, 14);
             x = gplyr.substring(15, 18);
             y = gplyr.substring(19, 22);
-            p = gplyr.substring(23, 26);
+            p = gplyr.substring(23, 27);
             output[i] = new String[]{id, x, y, p};
         }
         return output;
@@ -692,6 +692,7 @@ public class Client {
     public static boolean send(String id, String mess) {
         if(id.length() != 8 || id.matches("^.*[^a-zA-Z0-9 ].*$")) {
             System.err.println("L'ID ne doit contenir que des charactères alphanumériques et être de taille exactement 8.");
+            return false;
         }
         if(mess.length() > 200 || mess.contains("***") || mess.contains("+++")) {
             System.err.println("Le message envoyé ne doit pas contenir la chaîne \"+++\" ou \"***\", et doit être de longueur inférieure à 200.");

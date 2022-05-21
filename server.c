@@ -446,7 +446,7 @@ void dunno(Player* info_joueur)
 void partie_en_cours(Player* info_joueur)
 {
     parties[info_joueur -> m].etat = 2;
-    strcpy(info_joueur -> p, "000");
+    strcpy(info_joueur -> p, "0000");
 
     deplacer_fantomes_aleatoirement(info_joueur);
 
@@ -528,7 +528,8 @@ void partie_en_cours(Player* info_joueur)
     }
 }
 
-void move(char d, Player* info_joueur){
+void move(char d, Player* info_joueur)
+{
     char buffer[4], mess[4];
     int is_move_finished = 1;
     
@@ -638,7 +639,7 @@ void glis(Player* info_joueur)
     }
 
     // Envoi du/des message(s) [GPLYR_id_x_y_p***]
-    char gplyr[30] = "GPLYR id...... x.. y.. p...***";
+    char gplyr[31] = "GPLYR id...... x.. y.. p....***";
     for(uint8_t i = 0; i < 255; i++)
     {
         if(parties[info_joueur -> m].joueurs[i] != NULL)
