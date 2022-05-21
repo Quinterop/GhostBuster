@@ -53,6 +53,7 @@ void avant_partie_aux(Player* info_joueur){
                 info_joueur -> etat = 2;
                 break;
             }
+            dunno(info_joueur);
         }
         else if(strcmp(message, "UNREG") == 0) // [UNREG***]
         {
@@ -289,7 +290,7 @@ void unreg(Player* info_joueur)
     {
         perror("Erreur lors de l'envoi du message [UNROK_m***].\n");
     }
-    printf("Message [UNROK m***] envoyé au joueur (m = %u).\n", info_joueur -> m);
+    printf("Message [UNROK_m***] envoyé au joueur (m = %u).\n", info_joueur -> m);
     return;
 }
 

@@ -187,8 +187,11 @@ public class Client {
                     }
                     break;
                 case 7: // [START***]
-                    start();
-                    return;
+                    if(start()) {
+                        System.out.println("Erreur lors de la tentative de début de partie");
+                        return;
+                    }
+                    break;
                 default:
                     System.out.println("Choix donné illégal.");
                     break;
@@ -348,9 +351,12 @@ public class Client {
     /**
      * Envoie la requête [START***] au serveur
      */
-    public static void start() {
+    public static boolean start() {
         sendTCPMessage("START***");
         String[] welco = welco();
+        if(welco == null) {
+            return false;
+        }
         String[] posit = posit();
 
         System.out.println("Bienvenue dans la partie " + welco[0] + " qui a pour hauteur " + welco[1] + " cases pour largeur " + welco[2] + " cases ainsi que " + welco[3] + " fantômes et dont l'ip est " + welco[4] + " et le port est " + welco[5]);
@@ -361,6 +367,7 @@ public class Client {
         t2 = new Thread(commMulticast);
         t.start();
         t2.start();
+        return true;
     }
 
     /**
